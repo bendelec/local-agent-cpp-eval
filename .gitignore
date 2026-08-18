@@ -1,0 +1,35 @@
+# CMake and generated build trees
+/build/
+/build-*/
+/cmake-build-*/
+/candidate/build/
+/candidate/build-*/
+/evaluator/build/
+/evaluator/build-*/
+/evaluator/conformance/build-under-test/
+**/CMakeFiles/
+**/CMakeCache.txt
+**/CTestTestfile.cmake
+**/Testing/
+**/cmake_install.cmake
+**/Makefile
+
+# Compiled artifacts and profiling/debug output
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.gcda
+*.gcno
+*.gcov
+*.profraw
+*.profdata
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+*~
