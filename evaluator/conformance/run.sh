@@ -16,7 +16,12 @@ cmake -S "$script_dir" -B "$build_dir" \
     -DCMAKE_BUILD_TYPE=Release
 cmake --build "$build_dir" --parallel
 
+status=0
 for label in geometry navmesh simulation crowd; do
     printf '\n=== %s ===\n' "$label"
-    ctest --test-dir "$build_dir" --output-on-failure --label-regex "^${label}$"
+    if ! ctest --test-dir "$build_dir" --output-on-failure --label-regex "^${label}$"; then
+        status=1
+    fi
 done
+
+exit "$status"

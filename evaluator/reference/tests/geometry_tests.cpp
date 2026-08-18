@@ -113,12 +113,19 @@ TEST(Geometry_Triangulate, SelfIntersectionIsInvalidMesh)
 
 TEST(Geometry_Triangulate, CollinearOutlineVertexIsPermitted)
 {
-    // A square with an extra collinear point on the bottom edge is valid.
-    const auto result = triangulate_simple_polygon(
-        ring({{0.0f, 0.0f}, {5.0f, 0.0f}, {10.0f, 0.0f}, {10.0f, 10.0f}, {0.0f, 10.0f}}));
+    const Polygon outline =
+        ring({{0.0f, 0.0f}, {5.0f, 0.0f}, {10.0f, 0.0f}, {10.0f, 10.0f}, {0.0f, 10.0f}});
+    const auto result = triangulate_simple_polygon(outline);
     ASSERT_TRUE(result.has_value());
-    // The collinear vertex is dropped, leaving a quadrilateral -> two triangles.
-    EXPECT_EQ(result->size(), 2u);
+    EXPECT_GE(result->size(), 2u);
+    EXPECT_LE(result->size(), 3u);
+    double area_sum = 0.0;
+    for (const Polygon& triangle : *result) {
+        EXPECT_EQ(triangle.vertices.size(), 3u);
+        EXPECT_GT(signed_area(triangle), 0.0);
+        area_sum += signed_area(triangle);
+    }
+    EXPECT_NEAR(area_sum, signed_area(outline), kEps * std::max(1.0, signed_area(outline)));
 }
 
 // ---- MSH-003: deterministic, non-degenerate, CCW triangles ----
