@@ -133,3 +133,8 @@ G pass, N fail (2 tests), S pass, C fail (1 test)
 Tests / Architecture / C++ quality: deferred pending repair
 Total: not assigned
 ```
+
+## Repair lineage
+
+The separately archived first repair submission is evaluated in
+[`ds4f-dwarfstar-aggressive-quant-run-01-repair-01.md`](ds4f-dwarfstar-aggressive-quant-run-01-repair-01.md).
