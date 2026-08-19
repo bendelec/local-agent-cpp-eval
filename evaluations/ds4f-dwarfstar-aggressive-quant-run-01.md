@@ -138,3 +138,5 @@ Total: not assigned
 
 The separately archived first repair submission is evaluated in
 [`ds4f-dwarfstar-aggressive-quant-run-01-repair-01.md`](ds4f-dwarfstar-aggressive-quant-run-01-repair-01.md).
+The second and final permitted repair is evaluated in
+[`ds4f-dwarfstar-aggressive-quant-run-01-repair-02.md`](ds4f-dwarfstar-aggressive-quant-run-01-repair-02.md).

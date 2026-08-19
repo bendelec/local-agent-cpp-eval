@@ -6,7 +6,7 @@ recorded as context, not as a quality score for local-vs-hosted runs of the same
 
 | Run ID | Model | Runtime / precision | Task revision | Functional tracks | Architecture / quality | Total | State | Detail |
 |---|---|---|---|---|---|---:|---|---|
-| `ds4f-dwarfstar-aggressive-quant-run-01` | DeepSeek V4 Flash | Local Dwarfstar DS4; aggressive quantization | Pre-planning revision: NFR-009 only | G/S pass; N/C defects | Deferred pending repair | — | Repair 01 received; still failing | [original](ds4f-dwarfstar-aggressive-quant-run-01.md), [repair 01](ds4f-dwarfstar-aggressive-quant-run-01-repair-01.md) |
+| `ds4f-dwarfstar-aggressive-quant-run-01` | DeepSeek V4 Flash | Local Dwarfstar DS4; aggressive quantization | Pre-planning revision: NFR-009 only | Public conformance passes; safety/source defects remain | **40/100 cap** | Raw 64/100 | Final after two repairs | [original](ds4f-dwarfstar-aggressive-quant-run-01.md), [repair 01](ds4f-dwarfstar-aggressive-quant-run-01-repair-01.md), [final repair](ds4f-dwarfstar-aggressive-quant-run-01-repair-02.md) |
 
 ## Comparison policy
 
