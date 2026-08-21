@@ -22,7 +22,8 @@ final repair snapshot, while preserving the full repair lineage.
 | Fresh CMake/configure/build via conformance runner | Pass; public API compatibility preserved |
 | Candidate-native CTest | 3/3 pass |
 | Candidate clang-format dry run | Pass |
-| Public conformance | **69/69 pass**: G 15/15, N 24/24, S 28/28, C 2/2 |
+| Original public conformance | **69/69 pass**: G 15/15, N 24/24, S 28/28, C 2/2 |
+| Expanded public conformance after visual-lab finding | **69/71 pass**: G 15/15, N 24/24, S 29/29, C 2/3; fails overlap recovery |
 | Sanitized valid-input probe | **Fail**: UBSan reports an out-of-range float-to-`int` conversion in `Simulation::step(FLT_MAX)` |
 
 Commands included:
@@ -47,19 +48,20 @@ to `int` out of range. This is undefined behavior on valid public input.
 | Geometry and mesh validation | 12 / 20 | Baseline geometry/mesh conformance passes, and the repair added useful self-touching/overlap tests. However, a positive-area degenerate outline (`{(0,0),(1,0),(0.5,1e-9)}`) is accepted, large-coordinate vertex-only mesh contact can be rejected, and finite norm behavior remains false for sufficiently large values. |
 | Pathfinding | 11 / 20 | All supplied direct, disconnected, and bent-route tests pass; the duplicate final goal is fixed. The claimed continuous coverage still merges real uncovered parameter gaps and can return a direct route through an epsilon-scale physical gap. |
 | Agent lifecycle and stepping | 13 / 20 | Supplied lifecycle/stepping tests pass, but valid huge finite duration invokes UB. IDs also wrap and can eventually reuse an identifier that contract semantics require to stay invalid after removal. |
-| Local crowd behavior | 12 / 15 | Supplied crossing and overtaking both pass; the final repair adds committed-segment checking. The resolution loop/documentation overstates its guarantee, and swept mesh containment remains capped sampling for unbounded `max_speed`. |
+| Local crowd behavior | 10 / 15 | Supplied crossing and overtaking pass, as does the new bent-corridor motion regression. However, the new public SIM-010 overlap-recovery fixture fails: two initially overlapping radius-0.25 discs in open space never exceed their 0.1 m initial separation. The resolution loop/documentation also overstates its guarantee, and swept mesh containment remains capped sampling for unbounded `max_speed`. |
 | Tests and functional discipline | 7 / 10 | Fast deterministic CTest coverage and several meaningful repair regressions. Missing tests allowed all final defects above, including extreme finite inputs and continuous epsilon-scale cases. |
 | Architecture | 6 / 10 | Clear three-module split, ownership, immutable mesh sharing, and useful architecture document. However, the document claims exact/no-cap containment and stronger avoidance/numeric guarantees than the implementation establishes; repair complexity is concentrated in large coupled geometry/avoidance helpers. |
 | C++ quality | 3 / 5 | RAII, value semantics, formatting, and warning-clean normal build are good. Undefined behavior and unsafe/extreme numerical operations materially reduce robustness. |
-| **Raw total** | **64 / 100** | — |
+| **Raw total** | **62 / 100** | — |
 
 ### Gate and final score
 
 ```text
 Build/API gate: PASS
 Safety gate:    FAIL — UBSan-confirmed undefined behavior for a valid finite step duration
-Conformance:    G 15/15, N 24/24, S 28/28, C 2/2
-Raw total:      64/100
+Original conformance: G 15/15, N 24/24, S 28/28, C 2/2
+Expanded conformance: G 15/15, N 24/24, S 29/29, C 2/3
+Raw total:      62/100
 Hard cap:       40/100
 Final score:    40/100
 ```
@@ -83,12 +85,16 @@ undefined behavior rather than a safe result.
 - **MSH-002 / MSH-003:** a finite positive-area but sub-threshold-degenerate outline is
   accepted and emits a degenerate triangle.
 - **SIM-013:** ID wraparound permits eventual reuse of an old removed identifier.
+- **SIM-010:** The expanded black-box `Crowd_OverlapRecovery` test (added after visual
+  laboratory use) shows that two initially overlapping discs in unobstructed open space
+  never materially separate. This is the explicit robustness edge case that requires an
+  attempted separation; the reference passes it and the candidate fails it.
 
 ## Strengths
 
 - The final repair demonstrably fixed the prior public conformance failures, including
   direct boundary paths, L-shaped paths, ordinary supplied crossing, and endpoint-order
-  handling.
+  handling. It also passes the later-added single-agent bent-corridor motion regression.
 - Public API, CMake target, immutability/value ownership approach, and standard lifecycle
   behavior are preserved.
 - The source is generally readable, warning-clean under normal flags, formatted, and has

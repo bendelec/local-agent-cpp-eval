@@ -356,6 +356,44 @@ TEST(Simulation_Step, LargeDurationDoesNotOvershootGoal)
     EXPECT_LE(length(state->position - Vec2{5.0f, 5.0f}), 0.1f + kEps);
 }
 
+TEST(Simulation_Step, BentRouteAroundReflexCornerReachesGoal)
+{
+    // A motion test, not only a find_path test: the route passes through the
+    // reflex vertex of the L mesh. Advancing to the next waypoint before the
+    // current corner is actually reached would make the next steering segment
+    // cut through the missing quadrant and leave the agent clamped forever.
+    const NavMesh mesh = make_l_mesh();
+    Simulation sim(mesh);
+    AgentConfig config;
+    config.position = Vec2{1.9f, 0.55f};
+    config.goal = Vec2{0.9f, 1.75f};
+    config.radius = 0.05f;
+    config.arrival_radius = 0.01f;
+    config.max_speed = 1.4f;
+    const auto id = sim.add_agent(config).value();
+
+    // Deliberately use a normal public frame duration rather than a fixed
+    // internal rate: clients such as the visual lab may legitimately call
+    // step at 30 Hz. Correct waypoint transitions must not depend on the
+    // caller's frame pacing.
+    for (int step_index = 0; step_index < 120; ++step_index) {
+        ASSERT_TRUE(sim.step(1.0f / 30.0f).has_value());
+        const auto state = sim.agent(id);
+        ASSERT_TRUE(state.has_value());
+        EXPECT_TRUE(is_finite(state->position));
+        EXPECT_TRUE(mesh.contains(state->position));
+        EXPECT_LE(length(state->velocity), state->max_speed + kEps);
+        if (state->status == AgentStatus::Reached) {
+            break;
+        }
+    }
+
+    const auto state = sim.agent(id);
+    ASSERT_TRUE(state.has_value());
+    EXPECT_EQ(state->status, AgentStatus::Reached);
+    EXPECT_LE(length(state->position - *config.goal), config.arrival_radius + kEps);
+}
+
 TEST(Simulation_Step, IdleAgentDoesNotMove)
 {
     Simulation sim(make_square_mesh());
