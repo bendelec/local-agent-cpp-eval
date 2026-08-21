@@ -1,13 +1,9 @@
-# Repair Feedback — Qwen 3.8 First Attempt
+# VWmini Follow-up: Motion and Avoidance Repairs
 
-Your first implementation has been archived immutably as
-`solutions/qwen38-27b-q8-xl-run-01/`. Continue work only in the live workspace
-`../vwmini_q38/`; do **not** modify the archive, evaluator, public headers, task
-requirements, or supplied tests.
-
-A subsequent visual integration review found two reproducible functional defects. The
-original public suite passed, but the submission is not ready without these repairs.
-Do not hard-code any particular scenario or coordinate.
+Continue work in the current VWmini workspace. Preserve the supplied public API and
+the existing requirements. Two reproducible library behaviors need repair before the
+implementation is complete. Generalize the solution; do not hard-code a particular
+scenario or coordinate.
 
 ## Required repairs
 
@@ -37,7 +33,7 @@ Do not treat multiple discs assigned the exact same terminal goal as a required 
 crowd-solver problem: collision-free occupancy of one identical point is infeasible and
 outside the requested repair. Focus on the two defects above.
 
-## Verification expected before completion
+## Verification before completion
 
 Add focused deterministic native regressions that would have caught both failures:
 
