@@ -111,8 +111,22 @@ the reference design.
 - [ ] Const queries are const; error handling follows the fixed `Result` contract.
 - [ ] Names, functions, and data structures are proportional and understandable.
 - [ ] Numeric tolerances/predicates are centralized enough to avoid semantic drift.
+- [ ] Repeated domain logic and bespoke helpers have been reviewed explicitly: unify
+  genuinely shared rules, but do not penalize clear local code or demand abstraction
+  for its own sake. Record concrete duplication/unification findings.
 - [ ] Source is warning-clean, consistently formatted, and contains no debug output,
   generated artefacts, or dead abstraction layers.
+
+### Supplemental source metrics (not directly scored)
+
+- [ ] Record implementation-only physical NCLOC with
+  `./scripts/measure-source.py CANDIDATE_SOURCE_DIR`. Use it only as a comparison
+  tie-breaker when functional evidence and readability are otherwise equivalent.
+- [ ] Optionally record a pinned-tool cognitive/cyclomatic-complexity result as audit
+  metadata. Do not score it or compare values from different tool versions. A high value
+  triggers manual review, not an automatic deduction.
+- [ ] Follow [`source-metrics.md`](source-metrics.md) for metric scope, interpretation,
+  and reproducibility requirements.
 
 ## 5. Scope and fairness check
 
@@ -149,4 +163,9 @@ Architecture and plan observations:
 
 Commands and toolchain:
 - ...
+
+Supplemental source review:
+- NCLOC: __ (command/scope)
+- Duplication/unification findings: ...
+- Optional pinned complexity result: __ (tool/version/config), or not collected
 ```

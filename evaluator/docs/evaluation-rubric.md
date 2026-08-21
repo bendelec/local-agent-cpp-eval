@@ -32,7 +32,8 @@ Do **not** require a particular file layout or algorithm. Instead ask:
    ownership?
 4. Are public contracts implemented directly rather than buried behind needless virtual
    abstractions, factories, or speculative extension layers?
-5. Is duplicated numeric/geometry logic consolidated without creating a god utility?
+5. Is duplicated numeric/geometry logic consolidated where it represents one shared
+   rule, without creating a god utility or abstracting clear local code prematurely?
 6. Would a maintainer be able to alter avoidance without destabilising mesh validation?
 
 ## Deductions
@@ -42,3 +43,6 @@ Do **not** require a particular file layout or algorithm. Instead ask:
   increases complexity (threads, third-party frameworks, hidden global state, etc.).
 - Do not penalize different valid algorithms, private data layouts, or extra focused
   tests. Do penalize hard-coded private fixture coordinates or behavior keyed to tests.
+- Implementation NCLOC and optional complexity metrics are supplemental review evidence,
+  not score targets. Prefer fewer implementation lines only when correctness, safety,
+  tests, and readability are otherwise equivalent; do not reward metric gaming.
