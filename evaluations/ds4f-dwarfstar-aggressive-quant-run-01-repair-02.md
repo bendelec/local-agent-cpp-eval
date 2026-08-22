@@ -23,7 +23,7 @@ final repair snapshot, while preserving the full repair lineage.
 | Candidate-native CTest | 3/3 pass |
 | Candidate clang-format dry run | Pass |
 | Original public conformance | **69/69 pass**: G 15/15, N 24/24, S 28/28, C 2/2 |
-| Expanded normative conformance after visual-lab findings | **71/72 pass**: G 15/15, N 24/24, S 29/29, C 3/4; the promoted close-following reflex-corner test passes, overlap recovery fails |
+| Public conformance | **71/72 pass**: G 15/15, N 24/24, S 29/29, C 3/4; close-following reflex-corner progress passes, overlap recovery fails |
 | Sanitized valid-input probe | **Fail**: UBSan reports an out-of-range float-to-`int` conversion in `Simulation::step(FLT_MAX)` |
 
 Commands included:
@@ -60,7 +60,7 @@ to `int` out of range. This is undefined behavior on valid public input.
 Build/API gate: PASS
 Safety gate:    FAIL — UBSan-confirmed undefined behavior for a valid finite step duration
 Original conformance: G 15/15, N 24/24, S 28/28, C 2/2
-Expanded normative conformance: G 15/15, N 24/24, S 29/29, C 3/4
+Public conformance: G 15/15, N 24/24, S 29/29, C 3/4
 Raw total:      62/100
 Hard cap:       40/100
 Final score:    40/100
@@ -85,8 +85,8 @@ undefined behavior rather than a safe result.
 - **MSH-002 / MSH-003:** a finite positive-area but sub-threshold-degenerate outline is
   accepted and emits a degenerate triangle.
 - **SIM-013:** ID wraparound permits eventual reuse of an old removed identifier.
-- **SIM-010:** The expanded black-box `Crowd_OverlapRecovery` test (added after visual
-  laboratory use) shows that two initially overlapping discs in unobstructed open space
+- **SIM-010:** The black-box `Crowd_OverlapRecovery` test shows that two initially
+  overlapping discs in unobstructed open space
   never materially separate. This is the explicit robustness edge case that requires an
   attempted separation; the reference passes it and the candidate fails it.
 - **Close following:** The later-added normative `Crowd_ReflexCornerFollowing` fixture

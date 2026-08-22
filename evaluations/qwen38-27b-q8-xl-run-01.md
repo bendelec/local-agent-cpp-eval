@@ -21,8 +21,7 @@ generated artifacts are in the immutable source snapshot.
 | Check | Result |
 |---|---|
 | Fresh CMake/configure/build via conformance runner | Pass; public API compatibility preserved |
-| Original public conformance at archival | **69/69 pass**: geometry 15/15, navmesh/path 24/24, simulation 28/28, crowd 2/2 |
-| Expanded public conformance after visual-lab finding | **69/71 pass**: geometry 15/15, navmesh/path 24/24, simulation 28/29, crowd 2/3 |
+| Public conformance | **69/72 pass**: geometry 15/15, navmesh/path 24/24, simulation 28/29, crowd 2/4 |
 | Candidate-native CTest from fresh snapshot build | **72/72 pass** |
 | Candidate-native CTest with ASan + UBSan | **72/72 pass**; no sanitizer diagnostic |
 | Independent fresh Clang library build | Pass with `-Wall -Wextra -Wpedantic`; no warnings |
@@ -48,7 +47,7 @@ ctest --test-dir /tmp/vwmini-qwen38-27b-q8-xl-run-01-native --output-on-failure
 | Geometry and mesh validation | 20 / 20 | All geometry and mesh conformance checks pass. The implementation validates finite/simple/CCW outlines, produces deterministic ear-clipped triangles, validates mesh topology, and implements allocation-free edge-tolerance containment. |
 | Pathfinding | 20 / 20 | All direct, disconnected, connected, bent-corridor, endpoint-preservation, and determinism checks pass. The implementation uses shared-edge adjacency, deterministic Dijkstra selection, portal string-pulling, and an analytic segment-containment gate. |
 | Agent lifecycle and stepping | 15 / 20 | Configuration/error/state/lifecycle basics and straight-line movement pass. However, a single agent on a valid bent L-corridor route can advance from a portal corner prematurely, steer through the missing quadrant, be containment-clamped at the reflex corner, and never reach its valid goal. The failure depends on public caller timestep (fails at 30 Hz, passes at 60 Hz). |
-| Local crowd behavior | 9 / 15 | The original crossing/overtaking fixtures pass, but the explicit initially-overlapping robustness case fails even in open space. In `avoidance_velocity`, the overlap response adds the direction from self to other, attracting rather than separating the discs; the maximum separation remains 0.1 m in the expanded regression. The candidate's identically named native test disabled separation assertions and did not expose this. |
+| Local crowd behavior | 9 / 15 | The crossing/overtaking fixtures pass, but the explicit initially-overlapping robustness case fails even in open space. In `avoidance_velocity`, the overlap response adds the direction from self to other, attracting rather than separating the discs; the maximum separation remains 0.1 m in the regression. The candidate's identically named native test disabled separation assertions and did not expose this. |
 | Tests and functional discipline | 7 / 10 | 72 focused deterministic native tests and sanitizers are useful, but two visible behavioral defects passed because the motion suite tested only straight-line simulation and the overlap test weakened its central separation assertion. No fixture-coordinate hardcoding was found. |
 | Architecture | 7 / 10 | The module split, immutable ownership, diagram, plan, and revision log remain good. However, the documentation calls the response RVO and says overlapping discs are pushed apart, while the implementation uses the attraction sign; the route-state transition is also insufficiently tested at portal corners. |
 | C++ quality | 4 / 5 | C++23, RAII/value semantics, no mutable global state, clear names, warning-clean compilation, and sanitizers remain strong. The large, mathematically dense avoidance function obscured a fundamental directional-sign error. |
@@ -59,8 +58,7 @@ ctest --test-dir /tmp/vwmini-qwen38-27b-q8-xl-run-01-native --output-on-failure
 ```text
 Build/API gate: PASS
 Safety gate:    PASS — fresh ASan/UBSan suite reports no diagnostic
-Original conformance: G 15/15, N 24/24, S 28/28, C 2/2
-Expanded conformance: G 15/15, N 24/24, S 28/29, C 2/3
+Public conformance: G 15/15, N 24/24, S 28/29, C 2/4
 Final score:    82/100
 ```
 
@@ -77,11 +75,10 @@ Final score:    82/100
   rather than generic boilerplate. The plan records meaningful design changes, including
   removal of an unjustified spatial index and a private-header collision fix.
 
-## Visual-lab follow-up and missed regressions
+## Known motion and avoidance defects
 
-The initial score was issued before manual visual-lab use exposed two deterministic public-API
-failures. The lab was then linked against this immutable archive, and the following tests were
-added to the private conformance suite; the reference implementation passes both.
+The following deterministic public-API failures are covered by the current conformance suite;
+the reference implementation passes each.
 
 1. `Simulation_Step.BentRouteAroundReflexCornerReachesGoal` runs a single agent from
    `{1.9, 0.55}` to `{0.9, 1.75}` through the literal L mesh at 30 Hz. Qwen stalls roughly
@@ -93,10 +90,14 @@ added to the private conformance suite; the reference implementation passes both
    recovery, not a general crowd solver. Qwen never exceeds its 0.1 m initial separation.
    Its native `OverlappingStartIsSeparated` test disabled overlap assertions and accepted
    unchanged separation, despite its name and comments.
+3. `Crowd_ReflexCornerFollowing.CloseAgentsBothRoundCornerAndReach` uses two initially
+   non-overlapping agents following in the same direction through an L-shaped reflex corner
+   to distinct, collision-feasible goals. Both remain `Moving` rather than reaching; a nearby
+   follower should not deadlock the leading agent at a valid corner.
 
 The multiple agents manually assigned exactly the same goal in the lab are not independently
 scored: discs cannot all occupy the same terminal point collision-free. That infeasible setup
-is distinct from the two reproducible defects above.
+is distinct from these reproducible defects.
 
 ## Documentation assessment
 
@@ -110,7 +111,6 @@ summarizes the build, test, and design state.
 
 ## Final finding
 
-This submission passes every fixed public conformance track and all of its substantially
-broader native tests on the first attempt. The only reservation is the expected limitation
-of a tuned local avoidance policy outside the narrowly specified normal-crowd cases; it is
-not a build, API, safety, mesh, path, or lifecycle defect.
+This initial submission has strong geometry, mesh, and path behavior, but the current
+conformance suite identifies motion and local-avoidance defects that are addressed by the
+subsequent repair process.
