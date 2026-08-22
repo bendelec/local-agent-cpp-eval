@@ -23,7 +23,7 @@ final repair snapshot, while preserving the full repair lineage.
 | Candidate-native CTest | 3/3 pass |
 | Candidate clang-format dry run | Pass |
 | Original public conformance | **69/69 pass**: G 15/15, N 24/24, S 28/28, C 2/2 |
-| Expanded public conformance after visual-lab finding | **69/71 pass**: G 15/15, N 24/24, S 29/29, C 2/3; fails overlap recovery |
+| Expanded normative conformance after visual-lab findings | **71/72 pass**: G 15/15, N 24/24, S 29/29, C 3/4; the promoted close-following reflex-corner test passes, overlap recovery fails |
 | Sanitized valid-input probe | **Fail**: UBSan reports an out-of-range float-to-`int` conversion in `Simulation::step(FLT_MAX)` |
 
 Commands included:
@@ -48,7 +48,7 @@ to `int` out of range. This is undefined behavior on valid public input.
 | Geometry and mesh validation | 12 / 20 | Baseline geometry/mesh conformance passes, and the repair added useful self-touching/overlap tests. However, a positive-area degenerate outline (`{(0,0),(1,0),(0.5,1e-9)}`) is accepted, large-coordinate vertex-only mesh contact can be rejected, and finite norm behavior remains false for sufficiently large values. |
 | Pathfinding | 11 / 20 | All supplied direct, disconnected, and bent-route tests pass; the duplicate final goal is fixed. The claimed continuous coverage still merges real uncovered parameter gaps and can return a direct route through an epsilon-scale physical gap. |
 | Agent lifecycle and stepping | 13 / 20 | Supplied lifecycle/stepping tests pass, but valid huge finite duration invokes UB. IDs also wrap and can eventually reuse an identifier that contract semantics require to stay invalid after removal. |
-| Local crowd behavior | 10 / 15 | Supplied crossing and overtaking pass, as does the new bent-corridor motion regression. However, the new public SIM-010 overlap-recovery fixture fails: two initially overlapping radius-0.25 discs in open space never exceed their 0.1 m initial separation. The resolution loop/documentation also overstates its guarantee, and swept mesh containment remains capped sampling for unbounded `max_speed`. |
+| Local crowd behavior | 10 / 15 | Crossing, overtaking, and the new close-following reflex-corner progress fixture pass. However, the normative SIM-010 overlap-recovery fixture fails: two initially overlapping radius-0.25 discs in open space never exceed their 0.1 m initial separation. The resolution loop/documentation also overstates its guarantee, and swept mesh containment remains capped sampling for unbounded `max_speed`. |
 | Tests and functional discipline | 7 / 10 | Fast deterministic CTest coverage and several meaningful repair regressions. Missing tests allowed all final defects above, including extreme finite inputs and continuous epsilon-scale cases. |
 | Architecture | 6 / 10 | Clear three-module split, ownership, immutable mesh sharing, and useful architecture document. However, the document claims exact/no-cap containment and stronger avoidance/numeric guarantees than the implementation establishes; repair complexity is concentrated in large coupled geometry/avoidance helpers. |
 | C++ quality | 3 / 5 | RAII, value semantics, formatting, and warning-clean normal build are good. Undefined behavior and unsafe/extreme numerical operations materially reduce robustness. |
@@ -60,7 +60,7 @@ to `int` out of range. This is undefined behavior on valid public input.
 Build/API gate: PASS
 Safety gate:    FAIL — UBSan-confirmed undefined behavior for a valid finite step duration
 Original conformance: G 15/15, N 24/24, S 28/28, C 2/2
-Expanded conformance: G 15/15, N 24/24, S 29/29, C 2/3
+Expanded normative conformance: G 15/15, N 24/24, S 29/29, C 3/4
 Raw total:      62/100
 Hard cap:       40/100
 Final score:    40/100
@@ -89,6 +89,10 @@ undefined behavior rather than a safe result.
   laboratory use) shows that two initially overlapping discs in unobstructed open space
   never materially separate. This is the explicit robustness edge case that requires an
   attempted separation; the reference passes it and the candidate fails it.
+- **Close following:** The later-added normative `Crowd_ReflexCornerFollowing` fixture
+  passes: two non-overlapping, same-direction agents successfully round a reflex corner
+  to distinct goals. This improves the evidence for ordinary local route progress but
+  does not compensate for the explicit overlap-recovery failure.
 
 ## Strengths
 

@@ -1,14 +1,11 @@
 # Reference Crowd Scenarios
 
-The **Crossing** and **Overtaking** sections are normative black-box crowd
-scenarios for SIM-011. They do not prescribe a steering algorithm. The final
-section is a separately labelled supplemental quality regression derived from
-visual-laboratory use; it is not part of the normative conformance gate. All
-coordinates are metres.
+These are normative black-box crowd scenarios for SIM-009 through SIM-012.
+They do not prescribe a steering algorithm. All coordinates are metres.
 
 ## Common procedure for normative scenarios
 
-Create the stated fixed two-triangle square mesh and simulation. Add agents in the listed order.
+For Crossing, Overtaking, and Initially Overlapping Discs, create the stated fixed two-triangle square mesh and simulation. The reflex-corner scenario specifies its own mesh. Add agents in the listed order.
 Call `step(1.0f / 30.0f)` exactly 360 times (12 seconds). After every successful
 returned step, read every listed `AgentState` and assert:
 
@@ -66,12 +63,10 @@ observable separation attempt: during the first 120 30 Hz steps, the greatest
 centre separation must reach at least `0.25f`, rather than merely preserving
 the initial `0.1f` separation or attracting the discs.
 
-## Supplemental: close following through a reflex corner
+## Close following through a reflex corner
 
-This visual-laboratory regression combines a connected bent route with active local
-avoidance. It is a desirable quality probe, not a SIM-011 conformance requirement.
-The standard runner reports it separately and does not make it gate the
-normative conformance result.
+This regression, derived from visual-laboratory use, combines a connected bent
+route with active local avoidance.
 The mesh is the L-shaped union of the bottom arm `[0,5] × [0,1]` and left arm
 `[0,1] × [1,5]`, represented by these CCW triangles:
 

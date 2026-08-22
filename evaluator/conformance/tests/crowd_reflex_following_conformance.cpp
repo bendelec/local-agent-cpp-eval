@@ -1,5 +1,4 @@
-// Supplemental visual-laboratory regressions. These describe desirable crowd
-// quality beyond the normative SIM-010/SIM-011 scenarios.
+// Normative close-following reflex-corner progress and avoidance regression.
 #include "conformance_fixture.hpp"
 
 #include <vwmini/simulation.hpp>
@@ -9,7 +8,7 @@
 using namespace vwmini;
 using namespace vwmini_conformance;
 
-TEST(SupplementalCrowd_ReflexCornerFollowing, CloseAgentsBothRoundCornerAndReach)
+TEST(Crowd_ReflexCornerFollowing, CloseAgentsBothRoundCornerAndReach)
 {
     // A close-following pair should retain its valid bent route while local
     // avoidance is active. Distinct terminal positions avoid an infeasible

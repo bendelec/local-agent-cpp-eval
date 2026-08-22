@@ -28,7 +28,5 @@ add_conformance_track(vwmini_conformance_geometry geometry tests/geometry_confor
 add_conformance_track(vwmini_conformance_navmesh_path navmesh tests/navmesh_path_conformance.cpp)
 add_conformance_track(vwmini_conformance_simulation simulation tests/simulation_lifecycle_conformance.cpp)
 add_conformance_track(vwmini_conformance_crowd crowd tests/crowd_conformance.cpp)
-# Visual-laboratory quality probes are deliberately separate from normative
-# conformance: they exercise desirable behavior beyond the stated contract.
-add_conformance_track(vwmini_supplemental_crowd supplemental
-                      tests/supplemental_crowd_regressions.cpp)
+add_conformance_track(vwmini_conformance_crowd_reflex_following crowd
+                      tests/crowd_reflex_following_conformance.cpp)
