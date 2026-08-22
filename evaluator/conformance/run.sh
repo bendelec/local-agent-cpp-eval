@@ -24,4 +24,11 @@ for label in geometry navmesh simulation crowd; do
     fi
 done
 
+# Visual-laboratory quality probes are reported, but intentionally do not
+# change the normative conformance exit status.
+printf '\n=== supplemental (non-gating) ===\n'
+if ! ctest --test-dir "$build_dir" --output-on-failure --label-regex '^supplemental$'; then
+    printf '%s\n' 'Supplemental quality probe failed (non-gating).' >&2
+fi
+
 exit "$status"

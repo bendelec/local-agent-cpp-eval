@@ -1,5 +1,6 @@
-// Crowd behavior track (C): the two private scenarios from
-// evaluator/docs/benchmark/reference-scenarios.md (SIM-010..SIM-012).
+// Normative crowd behavior track (C): the two SIM-011 scenarios plus the
+// SIM-010 overlap-recovery robustness scenario documented in
+// evaluator/docs/benchmark/reference-scenarios.md.
 //
 // Black-box: no prescribed steering algorithm or passing side is assumed. Uses the
 // fixed square mesh from the scenario document; never calls geometry helpers.

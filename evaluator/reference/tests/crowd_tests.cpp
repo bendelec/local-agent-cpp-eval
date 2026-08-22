@@ -1,6 +1,7 @@
-// Crowd behavior track (C): the two private scenarios from
-// evaluator/docs/benchmark/reference-scenarios.md (SIM-010..SIM-012). Black-box:
-// no prescribed steering algorithm or passing side is assumed.
+// Normative crowd behavior track (C): the two SIM-011 scenarios plus the
+// SIM-010 overlap-recovery robustness scenario documented in
+// evaluator/docs/benchmark/reference-scenarios.md. Black-box: no prescribed
+// steering algorithm or passing side is assumed.
 
 #include "test_fixtures.hpp"
 
