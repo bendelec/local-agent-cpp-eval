@@ -6,9 +6,11 @@ class count. A simple direct design is preferred when it is correct and understa
 ## Gates
 
 A submission that does not configure/build with CMake and C++23, does not expose the
-fixed public API, or fails a core safety test (invalid input crash, non-finite state,
-or motion outside the mesh) cannot score above **40/100**. Do not award points for
-unrequested capabilities.
+fixed public API, or has a demonstrated core safety failure cannot score above **40/100**.
+Core safety failures are sanitizer-reported undefined behavior or memory errors on valid
+input, a crash, or reproducible non-finite/out-of-mesh state in normative conformance.
+Other valid-input numerical robustness defects remain substantial functional deductions but
+do not automatically invoke the cap. Do not award points for unrequested capabilities.
 
 ## Score (100 points)
 

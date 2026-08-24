@@ -1,116 +1,92 @@
-# Final Evaluation — qwen38-27b-q8-xl-run-01
+# Evaluation — Qwen 3.8 27B
 
-## Identity and scope
+## Run identity
 
 | Field | Value |
 |---|---|
-| Run | Qwen 3.8 27B |
+| Model | Qwen 3.8 27B |
 | Runtime | Local Lemonade / llama.cpp; `Qwen3.8-27B-UD-Q8_K_XL` |
-| Submission | First complete attempt |
-| Source snapshot | [`../solutions/qwen38-27b-q8-xl-run-01/`](../solutions/qwen38-27b-q8-xl-run-01/) |
-| Source revision | No Git history captured in the model workspace. Archive tree fingerprint: `7f3b44f7e787e66c3e3362d4bb27ef8909f9827f1d143a74331babad04e3a5bd` (`find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum`). |
-| Task revision | Current task, including NFR-009 and NFR-010 architecture/planning deliverables. |
-| Repair limit | Not applicable; this is the first attempt and final submission. |
+| Task revision | Current VWmini task, including NFR-009 architecture and NFR-010 implementation-plan deliverables |
+| Final source | [`../solutions/qwen38-27b-q8-xl-run-01-repair-02/`](../solutions/qwen38-27b-q8-xl-run-01-repair-02/) |
+| Final tree fingerprint | `622f8a4dcf0dda5006486ebdc57f2964bfe987b624140fbab482662360f371fd` |
+| Repair limit | Two repair prompts |
+| Final result | **83 / 100** |
 
-The archive was copied only after the model wrote its completion report. Generated
-`build*` and `CMakeFiles` output from the live workspace was deliberately excluded; no
-generated artifacts are in the immutable source snapshot.
+## Initial state
 
-## Build and test evidence
+The one-shot submission was unusually strong. It built cleanly, preserved the public API,
+passed its native suite (72/72), and had a complete C++23 architecture with real design and
+implementation-plan documentation. Geometry, mesh construction, and pathfinding were the
+strongest parts.
 
-| Check | Result |
-|---|---|
-| Fresh CMake/configure/build via conformance runner | Pass; public API compatibility preserved |
-| Public conformance | **69/72 pass**: geometry 15/15, navmesh/path 24/24, simulation 28/29, crowd 2/4 |
-| Candidate-native CTest from fresh snapshot build | **72/72 pass** |
-| Candidate-native CTest with ASan + UBSan | **72/72 pass**; no sanitizer diagnostic |
-| Independent fresh Clang library build | Pass with `-Wall -Wextra -Wpedantic`; no warnings |
+Against the current public suite it scored **69/72**: geometry 15/15, navmesh/path 24/24,
+simulation 28/29, and crowd 2/4. The missed behaviors were a single-agent reflex-corner
+stall, no material recovery from an initially overlapping pair, and close-following progress
+through a reflex corner.
 
-Commands included:
+## Final state
+
+The final source builds warning-clean with GCC and Clang. Its native suite passes **76/76**
+under GCC and under ASan/UBSan. Public conformance is **71/72**: all geometry, navmesh/path,
+and lifecycle tests pass; crossing, overtaking, and overlap recovery pass; the
+close-following reflex-corner test fails because the follower remains `Moving`.
+
+Visual testing confirms that a nearby same-direction follower can still cause a leading
+agent to become stuck at a valid L-corner. This is a practical local-avoidance progress
+failure, not an infeasible shared-goal case.
+
+The final repair also has two material review findings not exposed by its native sanitizer
+suite:
+
+- Valid `max_speed == FLT_MAX` together with a huge finite step can overflow the float
+  avoidance push and propagate NaN state.
+- The landing exemption used to improve degenerate-zone progress can permit a fast moving
+  disc's swept segment to pass through a stationary disc when its endpoints are clear.
+
+These are substantial functional deductions, but they are not an observed memory-safety or
+undefined-behavior sanitizer failure. The `max_speed == FLT_MAX` case is a targeted
+source-review probe, not a failing normative-conformance fixture; it therefore does not
+invoke the hard safety cap.
+
+Reproduction used:
 
 ```sh
-./evaluator/conformance/run.sh \
-  solutions/qwen38-27b-q8-xl-run-01 \
-  /tmp/vwmini-qwen38-27b-q8-xl-run-01-final
-
-cmake -S solutions/qwen38-27b-q8-xl-run-01 \
-  -B /tmp/vwmini-qwen38-27b-q8-xl-run-01-native \
-  -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/vwmini-qwen38-27b-q8-xl-run-01-native --parallel
-ctest --test-dir /tmp/vwmini-qwen38-27b-q8-xl-run-01-native --output-on-failure
+./evaluator/conformance/run.sh solutions/qwen38-27b-q8-xl-run-01-repair-02 /tmp/qwen-final
+cmake -S solutions/qwen38-27b-q8-xl-run-01-repair-02 -B /tmp/qwen-native -DCMAKE_BUILD_TYPE=Debug
+cmake --build /tmp/qwen-native --parallel && ctest --test-dir /tmp/qwen-native --output-on-failure
 ```
 
 ## Score
 
-| Area | Score | Evidence |
+| Area | Score | Assessment |
 |---|---:|---|
-| Geometry and mesh validation | 20 / 20 | All geometry and mesh conformance checks pass. The implementation validates finite/simple/CCW outlines, produces deterministic ear-clipped triangles, validates mesh topology, and implements allocation-free edge-tolerance containment. |
-| Pathfinding | 20 / 20 | All direct, disconnected, connected, bent-corridor, endpoint-preservation, and determinism checks pass. The implementation uses shared-edge adjacency, deterministic Dijkstra selection, portal string-pulling, and an analytic segment-containment gate. |
-| Agent lifecycle and stepping | 15 / 20 | Configuration/error/state/lifecycle basics and straight-line movement pass. However, a single agent on a valid bent L-corridor route can advance from a portal corner prematurely, steer through the missing quadrant, be containment-clamped at the reflex corner, and never reach its valid goal. The failure depends on public caller timestep (fails at 30 Hz, passes at 60 Hz). |
-| Local crowd behavior | 9 / 15 | The crossing/overtaking fixtures pass, but the explicit initially-overlapping robustness case fails even in open space. In `avoidance_velocity`, the overlap response adds the direction from self to other, attracting rather than separating the discs; the maximum separation remains 0.1 m in the regression. The candidate's identically named native test disabled separation assertions and did not expose this. |
-| Tests and functional discipline | 7 / 10 | 72 focused deterministic native tests and sanitizers are useful, but two visible behavioral defects passed because the motion suite tested only straight-line simulation and the overlap test weakened its central separation assertion. No fixture-coordinate hardcoding was found. |
-| Architecture | 7 / 10 | The module split, immutable ownership, diagram, plan, and revision log remain good. However, the documentation calls the response RVO and says overlapping discs are pushed apart, while the implementation uses the attraction sign; the route-state transition is also insufficiently tested at portal corners. |
-| C++ quality | 4 / 5 | C++23, RAII/value semantics, no mutable global state, clear names, warning-clean compilation, and sanitizers remain strong. The large, mathematically dense avoidance function obscured a fundamental directional-sign error. |
-| **Total** | **82 / 100** | — |
+| Geometry and mesh validation | 20 / 20 | All public checks pass; validation and containment are well structured. |
+| Pathfinding | 20 / 20 | Direct, disconnected, and bent routes pass with deterministic, contained output. |
+| Agent lifecycle and stepping | 16 / 20 | Public behavior is strong, but extreme valid speed/duration input can yield NaN state. |
+| Local crowd behavior | 9 / 15 | Crossing, overtaking, and overlap recovery pass; close following at a reflex corner still deadlocks, and the landing exemption has a tunnelling risk. |
+| Tests and functional discipline | 7 / 10 | 76 focused native tests and sanitizer runs are valuable, but the close-following test used an easier goal than the public fixture and missed the extreme-speed and swept-contact cases. |
+| Architecture | 7 / 10 | Clear module boundaries, value ownership, PIMPL isolation, and substantive documentation. The final avoidance logic became increasingly special-case-driven and difficult to reason about. |
+| C++ quality | 4 / 5 | Modern value-oriented C++ and warning-clean builds; dense float avoidance code leaves overflow and interaction hazards. |
+| **Total** | **83 / 100** | |
 
-### Gates and final score
+## Repair prompts and intermediate result
 
-```text
-Build/API gate: PASS
-Safety gate:    PASS — fresh ASan/UBSan suite reports no diagnostic
-Public conformance: G 15/15, N 24/24, S 28/29, C 2/4
-Final score:    82/100
-```
+Two repair prompts were used.
 
-## Strengths
+1. **First repair:** fixed the single-agent reflex waypoint-consumption stall and the
+   overlap-response sign/progress defect. It was a strong, targeted improvement, but did
+   not cover huge finite durations or close-following corner behavior.
+2. **Second repair:** targeted huge finite-duration safety, close-following reflex-corner
+   progress, restoration of avoidance regressions, and documentation accuracy. It added
+   detailed regressions and fixed several issues, but its close-following scenario used a
+   less demanding terminal arrangement than the public fixture. The remaining public
+   corner failure and review findings above prevent a higher score.
 
-- This is a complete first-attempt implementation, not a minimal conformance patch.
-- Public API and target shape are preserved exactly; the library is a small C++23 static
-  target with no runtime dependency beyond the standard library.
-- Mesh construction and pathfinding have unusually strong defensive checks: topology
-  validation, deterministic route selection, and a post-construction containment gate.
-- Simulation state is locally owned, snapshot-stepped, deterministic, and independently
-  tested under GCC, Clang, ASan, and UBSan.
-- The architecture and implementation plan are genuine, current implementation documents
-  rather than generic boilerplate. The plan records meaningful design changes, including
-  removal of an unjustified spatial index and a private-header collision fix.
+## Final assessment
 
-## Known motion and avoidance defects
-
-The following deterministic public-API failures are covered by the current conformance suite;
-the reference implementation passes each.
-
-1. `Simulation_Step.BentRouteAroundReflexCornerReachesGoal` runs a single agent from
-   `{1.9, 0.55}` to `{0.9, 1.75}` through the literal L mesh at 30 Hz. Qwen stalls roughly
-   0.76 m from its goal at the reflex corner. The cause is the post-move route loop advancing
-   a waypoint when it is merely within `max_speed * dt`, allowing the following segment to cut
-   through non-walkable space; the containment clamp then prevents further progress.
-2. `Crowd_OverlapRecovery.InitiallyOverlappingDiscsSeparate` uses the SIM-010 edge case of
-   two overlapping radius-0.25 agents in open space and requires only material separation
-   recovery, not a general crowd solver. Qwen never exceeds its 0.1 m initial separation.
-   Its native `OverlappingStartIsSeparated` test disabled overlap assertions and accepted
-   unchanged separation, despite its name and comments.
-3. `Crowd_ReflexCornerFollowing.CloseAgentsBothRoundCornerAndReach` uses two initially
-   non-overlapping agents following in the same direction through an L-shaped reflex corner
-   to distinct, collision-feasible goals. Both remain `Moving` rather than reaching; a nearby
-   follower should not deadlock the leading agent at a valid corner.
-
-The multiple agents manually assigned exactly the same goal in the lab are not independently
-scored: discs cannot all occupy the same terminal point collision-free. That infeasible setup
-is distinct from these reproducible defects.
-
-## Documentation assessment
-
-- `docs/architecture/architecture.md`: current module boundaries, Mermaid dependency
-diagram, ownership, numerical policy, containment seam, path gate, and avoidance choices
-match the implementation.
-- `docs/architecture/implementation-plan.md`: ordered small slices are all marked done,
-with expected files and verification; changes are explicitly recorded in its revision log.
-- `docs/architecture/completion-report.md`: present in the final snapshot and accurately
-summarizes the build, test, and design state.
-
-## Final finding
-
-This initial submission has strong geometry, mesh, and path behavior, but the current
-conformance suite identifies motion and local-avoidance defects that are addressed by the
-subsequent repair process.
+Qwen produced a substantially stronger implementation than the other evaluated model: the
+core geometry/path system is reliable, the architecture is coherent, and repair prompts led
+to real improvements. Its main weakness is avoidance complexity: successive local patches
+addressed individual failures but did not yield a robust, general corner-following policy.
+The result is a credible small navigation library with meaningful crowd limitations, rather
+than release-quality local avoidance.
