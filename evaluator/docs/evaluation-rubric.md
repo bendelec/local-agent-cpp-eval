@@ -14,15 +14,18 @@ do not automatically invoke the cap. Do not award points for unrequested capabil
 
 ## Score (100 points)
 
+Functional correctness is a prerequisite for a credible implementation, not a substitute
+for maintainable design. Build/API/safety gates establish the minimum bar. The score then
+weights architecture and maintainability (**50 points**) more heavily than functional
+conformance beyond that bar (**35 points**).
+
 | Area | Points | What earns full credit |
 |---|---:|---|
-| Geometry and mesh validation | 20 | Correct finite/simple/CCW checks, deterministic triangulation, transactional triangle-mesh creation, robust shared-edge topology and containment tolerance. |
-| Pathfinding | 20 | Correct direct/disconnected/bent paths; deterministic tie handling; safe contained segments; meaningful portal/funnel shortening rather than centre-only routing. |
-| Agent lifecycle and stepping | 20 | Exact public error/state semantics, safe substepping, speed/arrival behavior, route refresh and removal handling. |
-| Local crowd behavior | 15 | Snapshot-based deterministic local avoidance that passes the private crossing/overtaking fixtures without tunnelling or non-finite state. |
-| Tests and functional discipline | 10 | Focused deterministic tests covering successful and error paths; no weakening or test-only hardcoding. |
-| Architecture | 10 | Cohesive responsibilities, low coupling, sensible inward dependencies, understandable ownership; no needless framework or leaked mutable internals. |
-| C++ quality | 5 | RAII/value semantics, const correctness, meaningful names, small comprehensible functions, warning-clean code, no debug artifacts. |
+| Architecture and dependency design | 20 | Cohesive responsibilities, explicit stable seams, low coupling, sensible inward dependencies, understandable ownership, and no leaked mutable internals. |
+| Decomposition and complexity | 20 | Small coherent functions and modules; no unnecessary bespoke machinery or duplicated policy; control flow and nesting proportionate to the task. |
+| C++ clarity and discipline | 10 | RAII/value semantics, const correctness, meaningful names, standard-library use where appropriate, warning-clean code, and no debug artifacts. |
+| Tests and functional discipline | 15 | Focused deterministic tests with independent oracles where practical; successful and error paths; no weakening, fixture hard-coding, or shared-bug test oracle. |
+| Functional conformance beyond the gate | 35 | Correct geometry, paths, lifecycle, and crowd behavior across normative and targeted reviewer probes, with deterministic finite contained state. |
 
 ## Architecture review questions
 
@@ -45,6 +48,14 @@ Do **not** require a particular file layout or algorithm. Instead ask:
   increases complexity (threads, third-party frameworks, hidden global state, etc.).
 - Do not penalize different valid algorithms, private data layouts, or extra focused
   tests. Do penalize hard-coded private fixture coordinates or behavior keyed to tests.
-- Implementation NCLOC and optional complexity metrics are supplemental review evidence,
-  not score targets. Prefer fewer implementation lines only when correctness, safety,
-  tests, and readability are otherwise equivalent; do not reward metric gaming.
+- Implementation NCLOC and complexity metrics are evidence for decomposition review, not
+  standalone score targets. Do not reward line-count gaming.
+- Measure source-only non-comment LOC (NCLOC) consistently. Use Clang CFG McCabe
+  complexity (`E - N + 2`) and maximum lexical brace nesting as objective per-function
+  signals, then combine them with source review for missed generalization, duplicated
+  bespoke policy, coupling, and unclear responsibility boundaries.
+- For the 20-point decomposition/complexity category, the worse maximum CFG/nesting pair
+  establishes a ceiling before subjective review: <=20/<=5 -> 20; 21-35/6 -> 17;
+  36-50/7 -> 13; 51-70/8-9 -> 8; >70/>=10 -> 3. Source-review findings may lower the
+  score within that ceiling. These thresholds are maintainability evidence, not a
+  correctness gate.

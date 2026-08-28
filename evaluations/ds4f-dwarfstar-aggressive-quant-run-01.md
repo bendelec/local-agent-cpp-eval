@@ -10,7 +10,7 @@
 | Final source | [`../solutions/ds4f-dwarfstar-aggressive-quant-run-01-repair-02/`](../solutions/ds4f-dwarfstar-aggressive-quant-run-01-repair-02/) |
 | Final tree fingerprint | `3e57314a87fc2dfd0ea73686ffffc9e763c1beb1f2f287e079ceb3b9c8be689e` |
 | Repair limit | Two repair prompts |
-| Final result | **40 / 100 capped** (raw 62 / 100) |
+| Final result | **40 / 100 capped** (raw 59 / 100) |
 
 ## Initial state
 
@@ -54,21 +54,19 @@ diagnostics, not correctness scores, but they give scale to the architecture rev
 
 | Area | Score | Assessment |
 |---|---:|---|
-| Geometry and mesh validation | 12 / 20 | Baseline checks pass, but finite extreme norms, degeneracy, and large-coordinate topology remain fragile. |
-| Pathfinding | 11 / 20 | Main route fixtures pass, but tolerance-based interval joining can accept a physical uncovered gap. |
-| Agent lifecycle and stepping | 13 / 20 | Normal lifecycle passes; valid huge duration invokes undefined behavior and identifiers can wrap. |
-| Local crowd behavior | 10 / 15 | Crossing, overtaking, and close following pass; simple open-space initial overlap does not recover. |
-| Tests and functional discipline | 7 / 10 | Deterministic tests and repair regressions exist, but missed all final numerical and overlap defects. |
-| Architecture | 6 / 10 | Sensible module split and ownership, but documentation overstates containment and avoidance guarantees; complex helpers are tightly coupled. |
-| C++ quality | 3 / 5 | Generally readable, RAII/value-oriented, and warning-clean in normal builds; valid-input UB is a material defect. |
-| **Raw total** | **62 / 100** | |
+| Architecture and dependency design | 13 / 20 | Public dependency direction and RAII ownership are sound, but tests cross private boundaries and navmesh carries redundant topology representations. |
+| Decomposition and complexity | 8 / 20 | CFG 33 and nesting 5 permit a higher ceiling, but duplicated avoidance candidate search and concentrated navmesh/simulation policies materially lower the review score. |
+| C++ clarity and discipline | 7 / 10 | Ownership/value semantics are clear, but unused/redundant state and long algorithmic functions make safe changes costly. |
+| Tests and functional discipline | 10 / 15 | Deterministic tests and repair regressions exist, but production helpers serve as test oracles and final numerical/overlap defects were missed. |
+| Functional conformance beyond the gate | 21 / 35 | 71/72 public conformance is offset by interval-coverage, numeric, and overlap-recovery defects. |
+| **Raw total** | **59 / 100** | |
 
 ## Safety gate
 
 ```text
 Build/API gate: PASS
 Safety gate:    FAIL — UBSan reports undefined behavior for valid step(FLT_MAX)
-Final score:    40 / 100 (hard cap)
+Final score:    40 / 100 (hard cap; raw 59)
 ```
 
 ## Repair prompts and intermediate result

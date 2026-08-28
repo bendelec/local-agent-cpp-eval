@@ -10,7 +10,7 @@
 | Final source | [`../solutions/ds4f-unquant-run-01-repair-02/`](../solutions/ds4f-unquant-run-01-repair-02/) |
 | Final tree fingerprint | `af255eadc7c4060bc58ba4182fa7bd3b71266dc30c08c837396d52dc5434d012` |
 | Repair limit | Two repair prompts |
-| Final result | **67 / 100** |
+| Final result | **57 / 100** |
 
 ## Initial state
 
@@ -86,14 +86,12 @@ substitute for CFG complexity.
 
 | Area | Score | Assessment |
 |---|---:|---|
-| Geometry and mesh validation | 17 / 20 | All public geometry and mesh checks pass, with deterministic topology and containment behavior. The score reserves credit for unreviewed extreme geometric cases and the repair's narrow focus. |
-| Pathfinding | 17 / 20 | All public direct, disconnected, and bent-route checks pass. The deterministic Dijkstra/funnel implementation is functional, but its documentation is materially inaccurate. |
-| Agent lifecycle and stepping | 12 / 20 | Public lifecycle behavior and the huge-duration underflow repair pass, but valid finite extreme radii produce non-finite state. Dense historical-slot storage also creates an avoidable resource hazard. |
-| Local crowd behavior | 8 / 15 | Three of four normative crowd scenarios pass and visual motion is improved. The follower still permanently stalls in the normative corner case, a near-envelope overtake overlaps, and wide stand-off causes unnecessary dithering. |
-| Tests and functional discipline | 6 / 10 | 34 deterministic native tests plus sanitizer runs are useful, but repair-02 added no regression for its replacement solver and missed the reproduced separation, finite-radius, feasibility, and encounter-lifetime defects. |
-| Architecture | 5 / 10 | Geometry, navmesh, path, and simulation are separated, but the avoidance rewrite is a large, tightly coupled algorithm in `simulation.cpp`, with quadratic persistent state and stale architecture claims. |
-| C++ quality | 2 / 5 | RAII/value semantics and warning-clean GCC/Clang builds are positive. Float-overflow paths, an infeasible optimization fallback, and a very dense avoidance implementation substantially reduce confidence. |
-| **Total** | **67 / 100** | |
+| Architecture and dependency design | 14 / 20 | Public ownership is clear, but `path` depends on `NavMesh::Impl` storage and boundary-projection policy leaks from navmesh into simulation. |
+| Decomposition and complexity | 3 / 20 | The CFG-75, nesting-10 `advance` reaches the metric ceiling before review. Its 339 lines combine every substep phase; dense pair state and bespoke boundary probing further confirm the maintainability failure. |
+| C++ clarity and discipline | 6 / 10 | Value ownership, `std::expected`, RAII, and `[[nodiscard]]` are used well, but magic probe budgets and the policy-dense central routine are hard to safely alter. |
+| Tests and functional discipline | 9 / 15 | 34 deterministic tests and sanitizer runs are valuable, but repair-02 did not add regressions for its replacement solver and missed separation, finite-radius, feasibility, and state-lifetime defects. |
+| Functional conformance beyond the gate | 25 / 35 | 71/72 public conformance and improved visual behavior are meaningful, but the corner terminal stall, overlap probe, valid-input non-finite state, and excessive stand-off remain material. |
+| **Total** | **57 / 100** | |
 
 ## Repair outcome
 

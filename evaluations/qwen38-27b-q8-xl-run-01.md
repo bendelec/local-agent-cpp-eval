@@ -10,7 +10,7 @@
 | Final source | [`../solutions/qwen38-27b-q8-xl-run-01-repair-02/`](../solutions/qwen38-27b-q8-xl-run-01-repair-02/) |
 | Final tree fingerprint | `622f8a4dcf0dda5006486ebdc57f2964bfe987b624140fbab482662360f371fd` |
 | Repair limit | Two repair prompts |
-| Final result | **83 / 100** |
+| Final result | **69 / 100** |
 
 ## Initial state
 
@@ -72,14 +72,12 @@ not correctness scores, but they provide useful context for the avoidance review
 
 | Area | Score | Assessment |
 |---|---:|---|
-| Geometry and mesh validation | 20 / 20 | All public checks pass; validation and containment are well structured. |
-| Pathfinding | 20 / 20 | Direct, disconnected, and bent routes pass with deterministic, contained output. |
-| Agent lifecycle and stepping | 16 / 20 | Public behavior is strong, but extreme valid speed/duration input can yield NaN state. |
-| Local crowd behavior | 9 / 15 | Crossing, overtaking, and overlap recovery pass; close following at a reflex corner still deadlocks, and the landing exemption has a tunnelling risk. |
-| Tests and functional discipline | 7 / 10 | 76 focused native tests and sanitizer runs are valuable, but the close-following test used an easier goal than the public fixture and missed the extreme-speed and swept-contact cases. |
-| Architecture | 7 / 10 | Clear module boundaries, value ownership, PIMPL isolation, and substantive documentation. The final avoidance logic became increasingly special-case-driven and difficult to reason about. |
-| C++ quality | 4 / 5 | Modern value-oriented C++ and warning-clean builds; dense float avoidance code leaves overflow and interaction hazards. |
-| **Total** | **83 / 100** | |
+| Architecture and dependency design | 14 / 20 | Public ownership boundaries are sound, but the avoidance subsystem remains under-decomposed and storage-coupled. |
+| Decomposition and complexity | 8 / 20 | `Simulation::step` is a 207-line multi-phase orchestrator (CFG 40, nesting 6); pathfinding also combines several bespoke numerical algorithms in one unit. |
+| C++ clarity and discipline | 7 / 10 | RAII, values, `std::expected`, and comments are strong, but parallel arrays and phase-coupled float avoidance reduce local clarity. |
+| Tests and functional discipline | 11 / 15 | 76 focused tests and sanitizer runs are useful, but the easier corner fixture and missing independent extreme/swept-contact checks leave important gaps. |
+| Functional conformance beyond the gate | 29 / 35 | Public conformance is 71/72, but the remaining corner deadlock plus extreme-speed NaN and tunnelling probes are material. |
+| **Total** | **69 / 100** | |
 
 ## Repair prompts and intermediate result
 
