@@ -1,0 +1,401 @@
+// Simulation: agent lifecycle, goals, stepping, and deterministic local
+// avoidance.
+
+#include <vwmini/simulation.hpp>
+
+#include "internal/geometry_detail.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace vwmini {
+
+namespace {
+
+using detail::kEpsilon;
+
+// `step` is executed as equal substeps no longer than this bound, keeping
+// per-step motion small so waypoints and goals are never overshot.
+constexpr float kSubstepMax = 0.05f;
+// Neighbours closer than radius sum + this range take part in avoidance.
+constexpr float kAvoidRange = 2.0f;
+// Predicted collisions are considered within this look-ahead horizon (seconds).
+constexpr float kHorizon = 2.0f;
+// Radial and tangential correction strengths for pairwise avoidance. The
+// tangential (lateral) component dominates because separating the tracks
+// laterally is what actually prevents a collision.
+constexpr float kRadial = 0.6f;
+constexpr float kTangential = 2.5f;
+// Severity multiplier: the predicted required avoidance velocity is applied
+// energetically because speed clamping would otherwise waste most of it.
+constexpr float kAvoidanceStrength = 2.6f;
+
+[[nodiscard]] Error error(ErrorCode code, const char *reason) {
+  return Error{code, std::string(reason)};
+}
+
+// Internal mutable agent record. Uniquely owned by one Simulation via slots.
+struct Agent {
+  Vec2 position{};
+  Vec2 velocity{};
+  float radius{0.25f};
+  float max_speed{1.4f};
+  std::optional<Vec2> goal{};
+  float arrival_radius{0.25f};
+  AgentStatus status{AgentStatus::Idle};
+  std::vector<Vec2> route{}; // endpoint-preserving polyline; front == position
+  std::size_t waypoint{0};   // index of the next route point to move toward
+};
+
+[[nodiscard]] bool valid_arrival_radius(float value) {
+  // SIM-006: -1.0f is the single negative sentinel; -0.0f equals 0 and is
+  // valid.
+  return value == -1.0f || value >= 0.0f;
+}
+
+/// Applies the SIM-007 state transition for a validated in-mesh goal.
+/// Precondition: `agent.arrival_radius` holds the effective arrival radius.
+void apply_goal(Agent &agent, const NavMesh &mesh, Vec2 goal) {
+  agent.goal = goal;
+  agent.route.clear();
+  agent.waypoint = 0;
+  agent.velocity = {0.0f, 0.0f};
+  if (length(goal - agent.position) <= agent.arrival_radius) {
+    agent.status = AgentStatus::Reached; // already within the arrival radius
+    return;
+  }
+  const auto path = find_path(mesh, agent.position, goal);
+  if (!path) {
+    agent.status = AgentStatus::NoPath; // in-mesh goal, disconnected component
+    return;
+  }
+  agent.route = path->points;
+  agent.waypoint = 1; // route.front() equals the position; move toward index 1
+  agent.status = AgentStatus::Moving;
+}
+
+/// Advances all live agents by one deterministic substep. Decisions are made
+/// from a snapshot of positions and velocities taken before any update, so the
+/// avoidance is simultaneous (SIM-010). Iteration order is slot order.
+void advance(std::vector<std::optional<Agent>> &agents, const NavMesh &mesh,
+             float dt) {
+  const std::size_t n = agents.size();
+  std::vector<Vec2> positions(n);
+  std::vector<Vec2> velocities(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    if (agents[i]) {
+      positions[i] = agents[i]->position;
+      velocities[i] = agents[i]->velocity;
+    }
+  }
+
+  // 1. Desired velocities: straight toward the next waypoint, never faster
+  //    than required to reach it within this substep (no overshoot).
+  std::vector<Vec2> desired(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    if (!agents[i] || agents[i]->status != AgentStatus::Moving) {
+      desired[i] = {0.0f, 0.0f};
+      continue;
+    }
+    const Agent &a = *agents[i];
+    const Vec2 target =
+        (a.waypoint < a.route.size()) ? a.route[a.waypoint] : *a.goal;
+    const Vec2 to_target = target - positions[i];
+    const float d = length(to_target);
+    if (d <= 0.0f) {
+      desired[i] = {0.0f, 0.0f};
+      continue;
+    }
+    const float speed = std::min(a.max_speed, d / dt);
+    desired[i] = to_target * (speed / d);
+  }
+
+  // 2. Pairwise avoidance from the snapshot (order i < j). The correction
+  //    blends a push directly away from the neighbour with a tangential steer
+  //    on the right of each moving agent's own heading. Non-moving agents
+  //    never receive a deflection, so terminal states stay exactly stable.
+  for (std::size_t i = 0; i < n; ++i) {
+    if (!agents[i]) {
+      continue;
+    }
+    const Agent &ai = *agents[i];
+    const bool di_moving = ai.status == AgentStatus::Moving;
+    for (std::size_t j = i + 1; j < n; ++j) {
+      if (!agents[j]) {
+        continue;
+      }
+      const Agent &aj = *agents[j];
+      if (!di_moving && aj.status != AgentStatus::Moving) {
+        continue;
+      }
+      const Vec2 rel_pos = positions[i] - positions[j];
+      const float d = length(rel_pos);
+      const float r_ab = ai.radius + aj.radius;
+      if (d > r_ab + kAvoidRange) {
+        continue;
+      }
+      Vec2 radial = (d > 1e-6f) ? rel_pos * (1.0f / d) : Vec2{1.0f, 0.0f};
+      float severity = 0.0f;
+      if (d < r_ab) {
+        severity = (r_ab - d) * 2.0f; // already overlapping: strong push
+      } else {
+        // Envelope push: a pair this close is always pushed apart
+        // steadily, so it cannot coast back into contact between
+        // predicted-approach corrections.
+        severity = std::max(severity, (r_ab + 0.35f - d) * 2.5f);
+        const Vec2 rel_vel = velocities[i] - velocities[j];
+        const double approaching = detail::dot2(rel_pos, rel_vel);
+        if (approaching < 0.0) {
+          const double rel_speed2 = detail::dot2(rel_vel, rel_vel);
+          if (rel_speed2 > 1e-9) {
+            const double t_c = -approaching / rel_speed2;
+            if (t_c <= kHorizon) {
+              const Vec2 closest = rel_pos + rel_vel * static_cast<float>(t_c);
+              const float closest_d = length(closest);
+              if (closest_d < r_ab) {
+                severity = (r_ab - closest_d) / static_cast<float>(t_c + 1e-6);
+              }
+            }
+          }
+        }
+      }
+      if (severity <= 0.0f) {
+        continue;
+      }
+      // Traffic-rule steering: each moving agent veers to the right-hand
+      // side of its own desired heading, plus a push directly away from
+      // the neighbour. The heading-based side never flips mid-approach.
+      const auto steer_dir = [&](Vec2 heading, bool outward) {
+        const float dl = length(heading);
+        const Vec2 right =
+            (dl > 1e-6f) ? Vec2{heading.y / dl, -heading.x / dl} : Vec2{};
+        const Vec2 away = (outward) ? radial : Vec2{-radial.x, -radial.y};
+        const Vec2 blend = away * kRadial + right * kTangential;
+        const float bl = length(blend);
+        return (bl > 0.0f) ? blend * (severity * kAvoidanceStrength / bl)
+                           : Vec2{};
+      };
+      if (di_moving) {
+        desired[i] = desired[i] + steer_dir(desired[i], true);
+      }
+      if (aj.status == AgentStatus::Moving) {
+        desired[j] = desired[j] + steer_dir(desired[j], false);
+      }
+    }
+  }
+
+  // 3. Apply: clamp to max speed, cap at the next waypoint, stay contained.
+  for (std::size_t i = 0; i < n; ++i) {
+    if (!agents[i]) {
+      continue;
+    }
+    Agent &a = *agents[i];
+    Vec2 v = desired[i];
+    const float speed = length(v);
+    if (speed > a.max_speed && speed > 0.0f) {
+      v = v * (a.max_speed / speed);
+    }
+    Vec2 move = v * dt;
+    if (a.status == AgentStatus::Moving) {
+      const Vec2 to_target = (a.waypoint < a.route.size())
+                                 ? a.route[a.waypoint] - a.position
+                                 : *a.goal - a.position;
+      const float d = length(to_target);
+      const float m = length(move);
+      if (d > 0.0f && m > d) {
+        move = move * (d / m); // never pass the waypoint/goal this substep
+      }
+    }
+    // Containment: shrink the move until the new centre is in-mesh.
+    Vec2 new_pos = a.position + move;
+    if (!mesh.contains(new_pos)) {
+      float t = 1.0f;
+      bool ok = false;
+      for (int k = 0; k < 10; ++k) {
+        if (mesh.contains(a.position + move * t)) {
+          ok = true;
+          break;
+        }
+        t *= 0.5f;
+      }
+      new_pos = ok ? (a.position + move * t) : a.position;
+    }
+    // Defensive: refuse to adopt any non-finite position.
+    if (!detail::is_finite(new_pos)) {
+      new_pos = a.position;
+    }
+    a.position = new_pos;
+    a.velocity = v; // executed decision, bounded by max speed
+
+    if (a.status == AgentStatus::Moving && a.waypoint < a.route.size() &&
+        length(a.position - a.route[a.waypoint]) <= kEpsilon) {
+      ++a.waypoint;
+    }
+    if (a.status == AgentStatus::Moving && a.goal &&
+        length(a.position - *a.goal) <= a.arrival_radius) {
+      a.status = AgentStatus::Reached; // SIM-009
+      a.velocity = {0.0f, 0.0f};
+    }
+  }
+}
+
+/// Returns a pointer to the live agent for `id`, or nullptr.
+[[nodiscard]] Agent *find_slot(std::vector<std::optional<Agent>> &agents,
+                               AgentId id) noexcept {
+  if (id.value == 0 || static_cast<std::size_t>(id.value) > agents.size()) {
+    return nullptr;
+  }
+  std::optional<Agent> &slot = agents[static_cast<std::size_t>(id.value - 1)];
+  return slot ? &*slot : nullptr;
+}
+
+} // namespace
+
+struct Simulation::Impl {
+  explicit Impl(NavMesh m) : mesh(std::move(m)) {}
+  NavMesh mesh;
+  // Slots indexed by id - 1; removed agents leave an empty slot and their
+  // ids are never reused, so a removed id stays NotFound forever.
+  std::vector<std::optional<Agent>> agents;
+  std::uint32_t next_id = 1;
+  std::size_t live_count = 0;
+};
+
+Simulation::Simulation(NavMesh mesh)
+    : m_impl(std::make_unique<Impl>(std::move(mesh))) {}
+
+Simulation::~Simulation() = default;
+Simulation::Simulation(Simulation &&) noexcept = default;
+Simulation &Simulation::operator=(Simulation &&) noexcept = default;
+
+Result<AgentId> Simulation::add_agent(const AgentConfig &config) {
+  Impl &impl = *m_impl;
+  if (!detail::is_finite(config.position) ||
+      !detail::is_finite(config.radius) ||
+      !detail::is_finite(config.max_speed) ||
+      !detail::is_finite(config.arrival_radius) ||
+      (config.goal && !detail::is_finite(*config.goal))) {
+    return std::unexpected(
+        error(ErrorCode::InvalidArgument, "non-finite configuration"));
+  }
+  if (config.radius <= 0.0f || config.max_speed <= 0.0f) {
+    return std::unexpected(error(ErrorCode::InvalidArgument,
+                                 "radius and max speed must be positive"));
+  }
+  if (!valid_arrival_radius(config.arrival_radius)) {
+    return std::unexpected(error(ErrorCode::InvalidArgument,
+                                 "arrival radius must be -1, 0, or positive"));
+  }
+  if (!impl.mesh.contains(config.position)) {
+    return std::unexpected(
+        error(ErrorCode::OutsideMesh, "position outside the mesh"));
+  }
+  if (config.goal && !impl.mesh.contains(*config.goal)) {
+    return std::unexpected(
+        error(ErrorCode::OutsideMesh, "goal outside the mesh"));
+  }
+
+  Agent agent;
+  agent.position = config.position;
+  agent.radius = config.radius;
+  agent.max_speed = config.max_speed;
+  agent.arrival_radius =
+      (config.arrival_radius == -1.0f) ? config.radius : config.arrival_radius;
+  if (config.goal) {
+    apply_goal(agent, impl.mesh, *config.goal);
+  }
+
+  const std::uint32_t id = impl.next_id++;
+  impl.agents.emplace_back(std::move(agent));
+  ++impl.live_count;
+  return AgentId{id};
+}
+
+Result<void> Simulation::remove_agent(AgentId id) {
+  if (find_slot(m_impl->agents, id)) {
+    m_impl->agents[static_cast<std::size_t>(id.value - 1)].reset();
+    --m_impl->live_count;
+    return {};
+  }
+  return std::unexpected(error(ErrorCode::NotFound, "unknown agent id"));
+}
+
+Result<void> Simulation::set_goal(AgentId id, Vec2 goal, float arrival_radius) {
+  Agent *slot = find_slot(m_impl->agents, id);
+  if (!slot) {
+    return std::unexpected(error(ErrorCode::NotFound, "unknown agent id"));
+  }
+  if (!detail::is_finite(goal) || !detail::is_finite(arrival_radius)) {
+    return std::unexpected(
+        error(ErrorCode::InvalidArgument, "non-finite goal or arrival radius"));
+  }
+  if (!valid_arrival_radius(arrival_radius)) {
+    return std::unexpected(error(ErrorCode::InvalidArgument,
+                                 "arrival radius must be -1, 0, or positive"));
+  }
+  if (!m_impl->mesh.contains(goal)) {
+    return std::unexpected(
+        error(ErrorCode::OutsideMesh, "goal outside the mesh"));
+  }
+  slot->arrival_radius =
+      (arrival_radius == -1.0f) ? slot->radius : arrival_radius;
+  apply_goal(*slot, m_impl->mesh, goal);
+  return {};
+}
+
+Result<void> Simulation::clear_goal(AgentId id) {
+  Agent *slot = find_slot(m_impl->agents, id);
+  if (!slot) {
+    return std::unexpected(error(ErrorCode::NotFound, "unknown agent id"));
+  }
+  slot->goal.reset();
+  slot->route.clear();
+  slot->waypoint = 0;
+  slot->velocity = {0.0f, 0.0f};
+  slot->status = AgentStatus::Idle;
+  return {};
+}
+
+Result<void> Simulation::step(float seconds) {
+  if (!detail::is_finite(seconds) || seconds < 0.0f) {
+    return std::unexpected(error(ErrorCode::InvalidArgument,
+                                 "duration must be finite and non-negative"));
+  }
+  if (seconds == 0.0f || m_impl->live_count == 0) {
+    return {}; // success with no state change
+  }
+  const std::size_t substeps = std::max<std::size_t>(
+      1, static_cast<std::size_t>(std::ceil(seconds / kSubstepMax)));
+  const float dt = seconds / static_cast<float>(substeps);
+  for (std::size_t s = 0; s < substeps; ++s) {
+    advance(m_impl->agents, m_impl->mesh, dt);
+  }
+  return {};
+}
+
+std::optional<AgentState> Simulation::agent(AgentId id) const noexcept {
+  if (id.value == 0 ||
+      static_cast<std::size_t>(id.value) > m_impl->agents.size()) {
+    return std::nullopt;
+  }
+  const std::optional<Agent> &slot =
+      m_impl->agents[static_cast<std::size_t>(id.value - 1)];
+  if (!slot) {
+    return std::nullopt;
+  }
+  const Agent &a = *slot;
+  return AgentState{a.position,  a.velocity, a.radius,
+                    a.max_speed, a.goal,     a.status};
+}
+
+std::size_t Simulation::agent_count() const noexcept {
+  return m_impl->live_count;
+}
+
+} // namespace vwmini
