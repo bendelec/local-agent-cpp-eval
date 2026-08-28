@@ -38,6 +38,18 @@ Reproduction used:
 ctest --test-dir /tmp/ds-final/candidate_under_test --output-on-failure
 ```
 
+## Implementation size and complexity
+
+Source-only non-comment LOC is **1,232 NCLOC**, counted as every nonblank `src/` line
+remaining after lexical removal of line and block comments. This excludes public headers,
+tests, documentation, and generated files. The largest implementation unit is
+`src/nav_mesh.cpp` at 553 NCLOC, followed by `simulation.cpp` at 414.
+
+Clang's CFG dump gives a maximum source-function McCabe complexity of **33** for
+`triangulate_simple_polygon` (72 basic blocks, 103 edges; `E - N + 2`). Its maximum
+lexical brace nesting is **5** levels. These are compiler/configuration-dependent
+diagnostics, not correctness scores, but they give scale to the architecture review.
+
 ## Score
 
 | Area | Score | Assessment |

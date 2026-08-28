@@ -56,6 +56,18 @@ cmake -S solutions/qwen38-27b-q8-xl-run-01-repair-02 -B /tmp/qwen-native -DCMAKE
 cmake --build /tmp/qwen-native --parallel && ctest --test-dir /tmp/qwen-native --output-on-failure
 ```
 
+## Implementation size and complexity
+
+Source-only non-comment LOC is **1,292 NCLOC**, counted as every nonblank `src/` line
+remaining after lexical removal of line and block comments. This excludes public headers,
+tests, documentation, and generated files. The largest implementation unit is
+`src/vwmini/path.cpp` at 398 NCLOC, followed by `simulation.cpp` at 394.
+
+Clang's CFG dump gives a maximum source-function McCabe complexity of **40** for
+`Simulation::step(float)` (90 basic blocks, 128 edges; `E - N + 2`). Its maximum lexical
+brace nesting is **6** levels. These are compiler/configuration-dependent diagnostics,
+not correctness scores, but they provide useful context for the avoidance review.
+
 ## Score
 
 | Area | Score | Assessment |
