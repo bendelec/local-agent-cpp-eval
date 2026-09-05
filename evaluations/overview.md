@@ -13,16 +13,6 @@ local-vs-hosted runs of the same model.
 | `laguna-s-2.1-unquant-run-01` | Poolside Laguna S 2.1 | Hosted OpenRouter API; `poolside/laguna-s-2.1` | Current revision: NFR-009 and NFR-010 | **74/77**; finite-extreme, direct-route, containment failures | **63/100** | Final after two repairs | [evaluation](laguna-s-2.1-unquant-run-01.md) |
 | `laguna-s-2.1-ds4-run-01` | Poolside Laguna S 2.1 | DS4 run | Current revision: NFR-009 and NFR-010 | **71/77**; direct/contained paths, reflex route, and 3/4 crowd scenarios fail | **51/100** | Final after two repairs | [evaluation](laguna-s-2.1-ds4-run-01.md) |
 
-## Laguna S 2.1 serving history
-
-At the time of this evaluation, serving support for Laguna S 2.1 was unsatisfactory.
-Several false starts were attributable to the inference/serving stack rather than to the
-model itself, including Lemonade and Poolside's `llama.dpp`. The only viable, though still
-unsatisfactory, evaluated result was produced through Antirez DS4 after we rebased the
-stale Laguna branch on current `main` and added a simple attractor-loop guardrail. The
-`laguna-s-2.1-ud-q5-xl-run-01` material is non-canonical and deliberately unscored; its
-archives and repair prompt are not retained.
-
 ## Conformance revision 2
 
 The normative suite now has **77** tests: geometry 15, navmesh/path 29, simulation 29,
