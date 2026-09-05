@@ -17,10 +17,10 @@
 
 At the time of this DS4 run, serving support for Laguna S 2.1 was unsatisfactory.
 Earlier Lemonade and Poolside `llama.dpp` attempts failed for inference/serving-stack
-reasons rather than observed model behavior. This run became viable after rebasing the
-stale Laguna branch onto current `main` and adding a simple attractor-loop guardrail. The
-resulting implementation remains unsatisfactory for the engineering reasons documented
-below.
+reasons rather than observed model behavior. This run became viable after reviving the
+[DS4 Laguna branch](https://github.com/bendelec/ds4) on current `main` and adding a simple
+attractor-loop guardrail. The resulting implementation remains unsatisfactory for the
+engineering reasons documented below.
 
 ## Final verification
 
