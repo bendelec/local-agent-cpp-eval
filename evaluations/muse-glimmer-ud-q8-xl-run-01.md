@@ -149,7 +149,7 @@ This section records run-level background supplied by the operator; it is not a 
 input. Token totals follow the sister project's mechanical session accounting — main plus
 subagent sessions, turns counted as assistant messages, tokens summed per request — which is
 documented with the full field in the
-[reflective-context results](https://github.com/bendelec/reflective-pi/blob/1a22e7f59a00226ad8718b96e8bb958fc2511bc5/packages/evals/reflective-context-results.md).
+[reflective-context results](https://github.com/bendelec/reflective-pi/blob/reflective-context/packages/evals/reflective-context-results.md).
 VWmini itself retains no raw session exports ([session-retention policy](../sessions/README.md)).
 
 | Run | Turns | Input tokens | Output tokens |
