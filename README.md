@@ -31,7 +31,24 @@ standard task runs, but answer different questions. The boundary is intentional:
 A VWmini score is based only on the delivered task outcome and its engineering evidence.
 It does **not** score context management, the presence or quality of subagents, or other
 session-process behavior. A run may be long and span multiple context windows, but that
-fact is workload context rather than a VWmini scoring dimension.
+fact is workload context rather than a VWmini scoring dimension. Evaluation records may
+preserve compact, explicitly operator-attributed run-accounting context when it helps
+interpret a result; such context is never scored. Detailed qualitative session analysis
+remains in Reflective Pi or a separate restricted record.
+
+## Run-control policy
+
+For every published comparison run, the operator requests a **high** thinking/reasoning
+setting when the serving interface exposes that named level. When it does not, “nearest
+semantic equivalent” means the available user-visible thinking/reasoning mode nearest to
+high in the provider's own documented ordering. It is not a claim that providers implement
+equal internal reasoning budgets or compute. The per-provider setting mapping and actual
+serving-side setting are not retained as run artifacts, so this is a statement of the common
+run-control policy, not independently verifiable per-run telemetry. In particular, a
+token-volume or wall-time difference between Muse and Qwen must not be read as deliberately
+running Muse at a low thinking level while running Qwen at an extra-high level. This last
+comparison is an operator attestation about the run setup, not independently reproducible
+per-run telemetry.
 
 ## What VWmini evaluates
 

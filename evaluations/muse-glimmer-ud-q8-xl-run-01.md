@@ -19,6 +19,63 @@ into the model workspace. They are retained as operator-supplied evidence in
 [`../sessions/muse-glimmer-ud-q8-xl-run-01/`](../sessions/muse-glimmer-ud-q8-xl-run-01/).
 The immutable final source archive above is the evaluation subject.
 
+## Efficiency and session context (operator report; not scoring)
+
+At finalization, the operator supplied the following whole-run aggregates, spanning the
+initial pass and both repair cycles. A *turn* means one model response; a *round* means one
+initial or repair prompt cycle. *Input* and *output* are the operator's recorded service
+request and response token totals. The detailed accounting scope (for example, system, tool,
+and repeated-context tokens) is defined in the sister project's
+[reflective-context results (pinned predecessor record)](https://github.com/bendelec/reflective-pi/blob/3283c475683d2b6861f13381339f8764efda203a/packages/evals/reflective-context-results.md).
+That record retains the completed predecessor runs' session telemetry and its mechanical
+accounting protocol. Muse's corresponding result is still being prepared there; until it is
+uploaded, this report preserves the operator-provided Muse aggregate as provisional context.
+The provisional Muse row is not yet protocol-comparable to the mechanically reconstructed
+predecessor rows. VWmini itself retains no raw session exports, as described by the
+[session-retention policy](../sessions/README.md). Token volume, wall time, and session
+behavior are not VWmini rubric criteria and do **not** change the score.
+
+The table is a selected set of operator-identified comparators, not a complete token
+comparison or a leaderboard.
+
+| Run | Turns | Input tokens | Output tokens |
+|---|---:|---:|---:|
+| Muse Glimmer (`muse-glimmer-ud-q8-xl-run-01`) | 66 | 3.4M | 57k |
+| Poolside Laguna S 2.1 DS4 (`laguna-s-2.1-ds4-run-01`) | 411 | 20.6M | 281k |
+| Qwen 3.8 27B (`qwen38-27b-q8-xl-run-01`) | 806 | 51.2M | 961k |
+
+On these operator-provided aggregates, Muse's input and output token volume is more than
+an order of magnitude below Qwen's. These are provider/runtime token units with different
+possible tokenization and accounting scope; they describe recorded volume, not comparable
+compute, cost, or a measured efficiency ratio. The operator further reports that Muse and
+Qwen used the same hardware with comparable serving throughput, and that each corresponding
+initial or repair cycle for Muse took less than half Qwen's wall time. The
+[run-control policy](../README.md#run-control-policy) requested high thinking/reasoning, or
+the nearest semantic equivalent, for every published run. Muse was therefore not
+intentionally assigned a lower requested setting than Qwen. These operator observations
+provide context for the unusually terse run, but do not explain or excuse the final
+engineering defects.
+
+The operator considers it plausible—but untested—that closer feedback loops, more granular
+repair prompts, and earlier explicit guidance to split the implementation might have enabled
+more progress within comparable wall time while retaining lower token volume. This compact
+operator hypothesis is recorded at the operator's request; it is neither a VWmini quality
+adjustment nor evidence that the final archive is more correct.
+
+For neutral run-accounting context, the operator distinguishes an *output-limit event* (a
+service response ending at its configured output allowance), *automatic compaction* (the
+runner reaching its context-management trigger), and a *proactive prune* (manual removal of
+no-longer-needed context before that trigger). The comparison population is the six completed
+runs in the [overview](overview.md): both DeepSeek V4 Flash runs, Qwen, both Poolside Laguna
+runs, and Muse. The operator reports that, across its whole run, Muse had neither an
+output-limit event nor automatic compaction; it made one proactive prune at approximately
+70% of context capacity during the first repair and needed none in the initial pass. The
+operator also reports that each other run had at least one output-limit event or automatic
+compaction during its initial pass. The linked external record retains the predecessor event
+telemetry; for example, it records Qwen's six automatic compactions. Muse's corresponding
+external entry is pending. These facts are run-accounting context only, not a session-quality
+assessment.
+
 ## Repair outcome
 
 The first repair improved public conformance from **73 / 77** to **75 / 77** by correcting
