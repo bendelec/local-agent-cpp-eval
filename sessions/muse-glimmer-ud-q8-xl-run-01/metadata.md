@@ -20,7 +20,5 @@
 | Session export | No sanitized session artifact is retained in this repository. |
 | Provenance completeness | Initial source, task package fingerprint, completion report, runtime family, precision, output limit, and evaluation are retained; exact Lemonade build, hardware details, timestamps, and session-artifact checksum were not captured. |
 
-An earlier attempt used Lemonade's default 4K output-token limit. It was discarded before
-this run, and its mutable workspace was reset to the seed package; it is neither archived
-nor scored. Do not place build artifacts or mutable post-run edits in an eventual repair
-source archive.
+Do not place build artifacts or mutable post-run edits in an eventual repair source
+archive.
