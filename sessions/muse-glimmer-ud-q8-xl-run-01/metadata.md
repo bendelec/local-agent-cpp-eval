@@ -16,6 +16,7 @@
 | Initial source archive | `../../solutions/muse-glimmer-ud-q8-xl-run-01/` |
 | Initial source fingerprint | `f9c8fe14078dbbcf74a551356cc4b3fc22cdb6e02aaac88897eae6ad27992218` |
 | Evaluation record | `../../evaluations/muse-glimmer-ud-q8-xl-run-01.md` |
+| Repair prompt 01 | [`../../evaluations/repair-prompts/muse-glimmer-ud-q8-xl-run-01-repair-01.md`](../../evaluations/repair-prompts/muse-glimmer-ud-q8-xl-run-01-repair-01.md) (SHA-256 `36dd9dde6d571962be182993cf6a67a306dbd8a2999e40826ec713057f45e8bb`) |
 | Completion report | [`model-completion-report.md`](model-completion-report.md), supplied in chat rather than written into the workspace |
 | Session export | No sanitized session artifact is retained in this repository. |
 | Provenance completeness | Initial source, task package fingerprint, completion report, runtime family, precision, output limit, and evaluation are retained; exact Lemonade build, hardware details, timestamps, and session-artifact checksum were not captured. |
