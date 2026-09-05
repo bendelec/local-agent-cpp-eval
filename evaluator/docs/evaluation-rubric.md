@@ -1,7 +1,8 @@
 # Evaluator Rubric
 
-This document is private. Score the submitted candidate source, not its prose or
-class count. A simple direct design is preferred when it is correct and understandable.
+This is published evaluator guidance; it is not supplied in a candidate task package.
+Score the submitted candidate source, not its prose or class count. A simple direct
+design is preferred when it is correct and understandable.
 
 ## Gates
 

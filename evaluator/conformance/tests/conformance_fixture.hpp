@@ -1,13 +1,13 @@
 #pragma once
 
-// Shared helpers for the private black-box conformance suite.
+// Shared helpers for the published black-box conformance suite.
 //
 // These helpers use ONLY the public API (include/vwmini/*) and hand-authored literal
 // triangles. They never call the candidate triangulator and never reach into
 // implementation internals, so they link against any implementation exposing the
 // canonical vwmini::vwmini target.
 //
-// CMake selection (see evaluator/conformance/README or the top-level note):
+// CMake selection (see evaluator/README.md):
 //   - The conformance executable links the target `vwmini::vwmini`.
 //   - `VWMINI_CONFORMANCE_SOURCE_DIR` selects the provider:
 //       * unset/empty  -> evaluator/reference (add_subdirectory(../reference))

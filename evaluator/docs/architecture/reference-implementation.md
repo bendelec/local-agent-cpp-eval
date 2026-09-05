@@ -1,8 +1,8 @@
 # VWmini Reference Implementation Architecture
 
-> **Private reference-only design.** This document describes one clean implementation
-> used to establish conformance. It is not candidate-facing and does not prescribe a
-> candidate's internal architecture.
+> **Published reference-only design.** This document describes one clean implementation
+> used to establish conformance. It is not supplied in a candidate task package and does
+> not prescribe a candidate's internal architecture.
 
 ## Goals
 
@@ -49,7 +49,7 @@ only public include directory is `candidate/include/`.
 | `NavMesh::create` ↔ immutable `NavMesh` | Factory construction is the validation/publishing boundary. All topology is private after success; path and simulation consume read-only mesh values. |
 | `find_path` ↔ `Simulation` | `find_path` is a pure value query. Simulation owns its current returned `Path`, so goal assignment is explicit and stepping has no hidden mesh mutation. |
 | Snapshot steering ↔ integration | Steering reads snapshot position/velocity arrays and writes chosen velocities before any agent moves. This deliberately separates decision and mutation, preserving deterministic behavior. |
-| Library ↔ tests/lab | Both clients include only canonical public headers and link only `vwmini::vwmini`; no evaluator client depends on private `Impl` layout. |
+| Library ↔ tests/lab | Both clients include only canonical public headers and link to `vwmini::vwmini`; test/lab executables additionally link their own framework dependencies. No evaluator client depends on private `Impl` layout. |
 
 ## Ownership and data flow
 

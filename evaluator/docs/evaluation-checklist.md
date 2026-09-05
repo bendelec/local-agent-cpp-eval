@@ -1,8 +1,9 @@
 # Candidate Evaluation Checklist
 
-> **Private evaluator procedure.** Use this with `evaluation-plan.md` and
-> `evaluation-rubric.md`. It promotes consistent review; it does not authorize changing
-> the candidate's public contract or rewarding unrequested features.
+> **Evaluator procedure.** This published guidance is not supplied in the candidate
+> task package. Use it with `evaluation-plan.md` and `evaluation-rubric.md`. It promotes
+> consistent review; it does not authorize changing the candidate's public contract or
+> rewarding unrequested features.
 
 Record evidence and scores per track. Geometry failure must not erase separately earned
 navmesh, lifecycle, crowd, test, architecture, or C++-quality evidence.
@@ -22,12 +23,12 @@ navmesh, lifecycle, crowd, test, architecture, or C++-quality evidence.
 If any build/API/core-safety gate fails, apply the 40-point cap from the rubric, but run
 any independently compilable tracks and record their results.
 
-## 2. Functional tracks (75 points)
+## 2. Functional tracks (evidence for the 35-point conformance category)
 
 Run `evaluator/conformance/run.sh CANDIDATE_SOURCE_DIR BUILD_DIR` when possible. Keep
 its four label outputs in the review record.
 
-### G — Geometry (20)
+### G — Geometry
 
 - [ ] `Vec2` arithmetic and zero normalization are correct and finite.
 - [ ] Simple CCW/hole-free outline validation distinguishes invalid argument from invalid
@@ -38,7 +39,7 @@ its four label outputs in the review record.
 - [ ] Triangle mesh construction is transactional and rejects invalid topology.
 - [ ] Containment follows the stated finite boundary tolerance.
 
-### N — Navmesh and paths (20)
+### N — Navmesh and paths
 
 - [ ] Literal triangle mesh topology derives whole-edge adjacency only; vertex contact is
   not an adjacency.
@@ -48,7 +49,7 @@ its four label outputs in the review record.
 - [ ] Bent routes avoid non-walkable space and make a meaningful corner/portal shortening
   rather than following triangle centres or arbitrary detours.
 
-### S — Agent lifecycle and stepping (20)
+### S — Agent lifecycle and stepping
 
 - [ ] Add/remove/query/id behavior and every specified error code are exact.
 - [ ] Goal assignment, `NoPath`, `Idle`, `Moving`, `Reached`, and `clear_goal` transitions
@@ -58,7 +59,7 @@ its four label outputs in the review record.
   produce non-finite state.
 - [ ] Positions stay contained; arrival radius semantics are correct.
 
-### C — Local crowd behavior (15)
+### C — Local crowd behavior
 
 - [ ] Decisions are based on a per-substep snapshot, not agent-update order.
 - [ ] Crossing and overtaking fixtures make progress and avoid material disc overlap.
@@ -67,7 +68,7 @@ its four label outputs in the review record.
 - [ ] Pre-existing overlaps remain finite and receive a reasonable separation attempt.
 - [ ] Do not require ORCA, global deadlock resolution, or a particular passing side.
 
-## 3. Candidate tests and functional discipline (10 points)
+## 3. Candidate tests and functional discipline (15 points)
 
 - [ ] Tests are fast, deterministic, readable, and run through CMake/CTest or an equally
   clear command.
@@ -79,14 +80,14 @@ its four label outputs in the review record.
   swallowed errors are present.
 - [ ] Candidate tests would likely catch a plausible regression in each major area.
 
-## 4. Architecture document and source review (15 points)
+## 4. Architecture, decomposition, and source review (40 points)
 
 Read `docs/architecture/architecture.md` and
 `docs/architecture/implementation-plan.md` beside the final source. They are evidence
 of design/process quality, not substitutes for working code or opportunities to demand
 the reference design.
 
-### Architecture (10 points)
+### Architecture and dependency design (20 points)
 
 - [ ] The document has an inline diagram and identifies actual components,
   responsibilities, dependencies, ownership/data flow, seams/interfaces, and key
@@ -104,7 +105,17 @@ the reference design.
 - [ ] Ownership and lifetime are obvious, especially mesh sharing/copying, simulation
   mutation, paths, and agents.
 
-### C++ quality (5 points)
+### Decomposition and complexity (20 points)
+
+- [ ] Functions and modules have focused, cohesive responsibilities; policy stages that
+  need independent reasoning or tests are not buried in one orchestration routine.
+- [ ] The source avoids duplicated bespoke machinery and accidental coupling between
+  geometry, mesh/path, and mutable simulation policy.
+- [ ] Measure the maximum Clang CFG McCabe complexity and lexical brace nesting when
+  practical. Apply the ceiling in `evaluation-rubric.md`; use the metric together with
+  source review rather than as a standalone defect.
+
+### C++ clarity and discipline (10 points)
 
 - [ ] RAII and value semantics are used appropriately; raw owning pointers and leaks are
   absent.
@@ -117,14 +128,14 @@ the reference design.
 - [ ] Source is warning-clean, consistently formatted, and contains no debug output,
   generated artefacts, or dead abstraction layers.
 
-### Supplemental source metrics (not directly scored)
+### Supplemental source metrics
 
 - [ ] Record implementation-only physical NCLOC with
   `./scripts/measure-source.py CANDIDATE_SOURCE_DIR`. Use it only as a comparison
   tie-breaker when functional evidence and readability are otherwise equivalent.
-- [ ] Optionally record a pinned-tool cognitive/cyclomatic-complexity result as audit
-  metadata. Do not score it or compare values from different tool versions. A high value
-  triggers manual review, not an automatic deduction.
+- [ ] Optionally record a pinned-tool cognitive-complexity result as audit metadata. Do
+  not compare values from different tool versions. A high value triggers manual review,
+  not an automatic deduction.
 - [ ] Follow [`source-metrics.md`](source-metrics.md) for metric scope, interpretation,
   and reproducibility requirements.
 
@@ -146,10 +157,12 @@ Use this structure for each candidate:
 ```text
 Build/API gate: PASS | FAIL — evidence
 Safety gate:    PASS | FAIL — evidence
-Conformance:    G __/20, N __/20, S __/20, C __/15
-Candidate tests/discipline: __/10
-Architecture: __/10
-C++ quality: __/5
+Conformance tracks: G pass/total, N pass/total, S pass/total, C pass/total
+Architecture and dependency design: __/20
+Decomposition and complexity: __/20
+C++ clarity and discipline: __/10
+Tests and functional discipline: __/15
+Functional conformance beyond the gate: __/35
 Total: __/100 (cap applied? yes/no)
 
 Strengths:

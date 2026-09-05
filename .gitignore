@@ -28,6 +28,17 @@
 *.profraw
 *.profdata
 
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Raw session material and local credentials must never enter the public archive.
+sessions/*/session/
+sessions/*/*.jsonl
+.env
+.env.*
+!.env.example
+
 # Editor and operating-system files
 .vscode/
 .idea/

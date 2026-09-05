@@ -1,21 +1,29 @@
-# Private Evaluator Material
+# Evaluator Material
 
-Never distribute this directory to a candidate. It contains the reference library,
-private acceptance fixtures, conformance tests, visual diagnostic tool, and scoring
-guidance. The harness copies only `candidate/` into each candidate workspace and
-injects `prompt/standard-implementation-prompt.md` as text.
+This repository publishes this evaluator revision so reported results can be reproduced.
+The harness does **not** distribute it to a candidate: it copies only `candidate/` into
+each candidate workspace and injects `prompt/standard-implementation-prompt.md` as text.
+Consequently, this published revision is a known regression suite, not a held-out suite
+for future blind runs. Keep any unreleased acceptance material outside a public checkout
+until the associated evaluations are complete.
 
 ## Components
 
 - `reference/` — clean C++23 reference implementation of the canonical public headers,
-  plus 65 fast GTest unit/integration tests.
+  plus 67 fast GTest unit/integration tests.
 - `conformance/` — black-box, public-API-only headless tests. Its four independently
   labelled tracks are geometry, navmesh/path, simulation lifecycle, and crowd behavior.
 - `lab/` — optional SDL3 visual diagnostic/editor, linked only through the public API.
 - `docs/evaluation-plan.md` — independent track policy.
 - `docs/evaluation-rubric.md` — 100-point source-review rubric.
 - `docs/evaluation-checklist.md` — repeatable intake, test, and source-review procedure.
-- `docs/benchmark/reference-scenarios.md` — private crowd fixtures.
+- `docs/benchmark/reference-scenarios.md` — crowd-fixture rationale and scenarios.
+
+## Prerequisites
+
+The evaluator requires CMake 3.23 or newer, a C++23 compiler, and a
+CMake-discoverable GoogleTest installation (`find_package(GTest CONFIG REQUIRED)`). SDL3
+is needed only when building the visual lab.
 
 ## Reference build and tests
 

@@ -1,7 +1,7 @@
 # Visual Lab Architecture
 
-> **Private evaluator tool.** The visual lab is a diagnostic integration client, not a
-> library feature and not part of candidate evaluation.
+> **Published evaluator tool.** The visual lab is a diagnostic integration client, not a
+> library feature and not part of a candidate task package.
 
 ## Decision
 
@@ -53,6 +53,6 @@ state --> api
 
 `VWMINI_BUILD_LAB` defaults to `OFF` in `evaluator/CMakeLists.txt`. Enabling it runs
 `find_package(SDL3 CONFIG REQUIRED)` and builds `vwmini_lab`, linked to the reference
-`vwmini::vwmini` target. SDL3 is private to the lab; reference library, headless
-conformance harness, candidate package, and public headers remain standard-library
-only.
+`vwmini::vwmini` target. SDL3 is confined to the lab. The candidate package and public
+VWmini library interface use only the standard library; the headless conformance harness
+separately requires GoogleTest.
