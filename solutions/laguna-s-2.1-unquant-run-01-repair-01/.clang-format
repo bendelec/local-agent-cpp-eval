@@ -1,0 +1,25 @@
+---
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: Latest
+ColumnLimit: 100
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortLambdasOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlignAfterOpenBracket: Align
+AlignTrailingComments: true
+SpaceBeforeParens: ControlStatements
+SpaceAfterCStyleCast: false
+SortIncludes: CaseSensitive
+IncludeBlocks: Preserve
+DerivePointerAlignment: false
+PointerAlignment: Left
+NamespaceIndentation: None
+AccessModifierOffset: -4
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true

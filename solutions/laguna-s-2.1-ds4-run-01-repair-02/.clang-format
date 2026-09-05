@@ -1,0 +1,12 @@
+Language: Cpp
+Standard: Latest
+ColumnLimit: 100
+IndentWidth: 4
+UseTab: Never
+BreakBeforeBraces: Attach
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortLambdasOnASingleLine: All
+AlignAfterOpenBracket: Align
+PointerAlignment: Left
+IncludeBlocks: Preserve
+SortIncludes: CaseSensitive
