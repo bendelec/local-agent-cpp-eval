@@ -12,7 +12,7 @@ IGNORED_DIRECTORY_NAMES = {".git", "CMakeFiles", "Testing", "build"}
 
 
 def is_ignored_directory(name: str) -> bool:
-    return name in IGNORED_DIRECTORY_NAMES or name.startswith("build-")
+    return name in IGNORED_DIRECTORY_NAMES or name.startswith(("build-", "build_"))
 
 
 def update_record(digest: hashlib._Hash, tag: bytes, relative_path: Path, content: bytes) -> None:
