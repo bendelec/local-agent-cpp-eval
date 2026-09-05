@@ -1,4 +1,4 @@
-# Evaluation — Muse Glimmer (UD-Q8_XL initial run)
+# Evaluation — Muse Glimmer (UD-Q8_XL run)
 
 ## Run identity
 
@@ -8,122 +8,189 @@
 | Runtime | Local Lemonade; UD-Q8_K_XL. Exact backend/version is not retained. |
 | Run label | `muse-glimmer-ud-q8-xl-run-01` |
 | Task revision | Current VWmini task, including NFR-009 and NFR-010; conformance revision 2 |
-| Evaluated source | [`../solutions/muse-glimmer-ud-q8-xl-run-01/`](../solutions/muse-glimmer-ud-q8-xl-run-01/) |
-| Source tree fingerprint | `f9c8fe14078dbbcf74a551356cc4b3fc22cdb6e02aaac88897eae6ad27992218` |
-| Model completion report | [operator-supplied chat report](../sessions/muse-glimmer-ud-q8-xl-run-01/model-completion-report.md) |
+| Final source | [`../solutions/muse-glimmer-ud-q8-xl-run-01-repair-02/`](../solutions/muse-glimmer-ud-q8-xl-run-01-repair-02/) |
+| Final tree fingerprint | `4247eab34dcad49944a55c657705cbcf2850db15a36aa57fe1c269bf82048b5e` |
+| Repair limit | Two repair prompts |
 | Initial result | **35 / 100** |
+| Final result | **36 / 100** |
 
-The completion report was delivered in chat rather than written into the model workspace.
-The implementation prompt required a completion report but did not prescribe a file path,
-so that delivery is compliant. The report is preserved separately as operator-supplied run
-evidence; the immutable archived source tree above is the evaluation subject.
+The initial model report and two repair reports were delivered in chat rather than written
+into the model workspace. They are retained as operator-supplied evidence in
+[`../sessions/muse-glimmer-ud-q8-xl-run-01/`](../sessions/muse-glimmer-ud-q8-xl-run-01/).
+The immutable final source archive above is the evaluation subject.
 
-## Verification
+## Repair outcome
 
-The archive builds as C++23 and preserves all supplied public headers byte-for-byte. Its
-single native CTest executable passes in Debug under GCC 16.2 and Clang 22.1.8. A GCC
-ASan/UBSan Debug build also passes that native test, and both compilers accept the source
-with `-Wall -Wextra -Wpedantic -Werror`.
-
-The native test evidence is extremely limited: it is one 57-line `assert`-based smoke
-test. A Release build still reports 1/1 passing, but `NDEBUG` removes its assertions and
-leaves only `All basic tests passed` output. `BUILD_TESTING=OFF` is ignored and still
-builds the test executable. `clang-format --dry-run --Werror` reports 1,311 formatting
-diagnostics across the source and test files.
-
-Normative public-API conformance is **73 / 77**:
+The first repair improved public conformance from **73 / 77** to **75 / 77** by correcting
+the previously failing navmesh/path cases and the ordinary overtaking crowd case. It did not
+correct diagonal crossing progress and regressed the initial-overlap recovery case that the
+initial archive had passed. The second repair did not make a functional implementation change:
+formatting `repair-01/src/vwmini.cpp` with the available `clang-format` produces a file
+byte-identical to final `src/vwmini.cpp`; `CMakeLists.txt`, the test file, and both
+architecture documents are byte-identical between the two repair archives. Thus the final
+result remains **75 / 77**:
 
 | Track | Result | Material failures |
 |---|---:|---|
 | Geometry | 15 / 15 | — |
-| Navmesh/path | 27 / 29 | finite extreme-coordinate containment fails; a boundary-tolerance direct path returns four points rather than exactly `[start, goal]` |
+| Navmesh/path | 29 / 29 | — |
 | Simulation lifecycle | 29 / 29 | — |
-| Crowd | 2 / 4 | both crossing and overtaking permit material disc overlap |
+| Crowd | 2 / 4 | diagonal crossing agents remain `Moving`; initially overlapping agents do not materially separate |
 
-The crowd crossing reaches a minimum centre separation of approximately **0.00455** where
-the required minimum is **0.499**. Overtaking reaches approximately **0.48360**. These are
-not tolerance-scale misses; they violate the normal feasible open-space behavior required
-by SIM-011.
+The preserved repair-02 report claims all work packages are complete and verified, snapshot
+avoidance, active Release tests, and clean formatting. Those claims are not supported by the
+submitted archive or independent checks below.
 
-## Reproduced findings
+## Final verification
 
-### High — a valid finite duration does not return
+The final archive builds as C++23 in GCC 16.2 and Clang 22.1.8 Debug configurations with
+`-Wall -Wextra -Wpedantic -Werror`; its one native executable reports 1/1 passing under both.
+A GCC Release build reports 1/1 passing, and a GCC ASan/UBSan Debug native run passes without
+a report. `BUILD_TESTING=OFF` builds the library and has no test target. Supplied public
+headers are byte-identical to the candidate package.
 
-`Simulation::step` repeatedly subtracts a fixed `0.05f` from the supplied duration
-(`src/vwmini.cpp:617-621`). At `FLT_MAX`, that subtraction makes no representable progress,
-so a valid call never terminates. A public-API probe with one moving agent and
-`step(std::numeric_limits<float>::max())` remained running until a two-second timeout
-(status 124). The implementation must use a numerically safe duration/chunk policy; it
-must not reject the accepted finite duration, silently discard elapsed time, or require an
-unbounded number of substeps.
+These are limited positives. The native test is still an assert-only executable, so its
+assertions disappear under `NDEBUG`; the observed Release output is simply its unconditional
+success prints. Production `src/vwmini.cpp` is now clean under `clang-format --dry-run
+--Werror`, but the unchanged `tests/test_basic.cpp` produces **1,008** format diagnostics.
+The repair report only ran the formatter on production source and did not perform the
+promised Release-effective test conversion or full source/test formatting check.
 
-### High — local avoidance does not enforce collision-free feasible motion
+Normative conformance was run against the final immutable archive. Geometry, navmesh/path,
+and lifecycle all pass. Crowd crossing fails only at the final arrival assertion: both agents
+remain `Moving` after the required twelve simulated seconds. Initially overlapping agents
+reach a greatest centre separation of only approximately **0.10000 m**, below the required
+**0.25 m** observable recovery threshold. Overtaking and close reflex-corner following pass.
 
-Velocity selection (`:640-651`) adds a weak pairwise repulsion to the desired velocity,
-then independently clamps each agent. The later sequential integration (`:654-696`) does
-not validate predicted pair separation or repair a failed choice. Consequently, crossing
-agents pass through one another almost completely and overtaking agents overlap. This
-contradicts both the completion report's claim that the method is sufficient for the
-open-cell acceptance criterion and SIM-010/011.
+## Reproduced findings beyond the public suite
 
-### High — complete edges are matched exactly rather than within epsilon
+### High — avoidance is neither simultaneous nor live in feasible crossing
 
-Both mesh creation (`:222-235`) and path adjacency construction (`:357-379`) key edges by
-exact `Vec2` equality. MSH-005 instead requires corresponding complete edge endpoints no
-farther than epsilon apart. A four-triangle probe with the two copies of a shared edge
-separated by `5e-5f` is accepted and connected by the reference implementation, but this
-archive rejects it as a `T-junction`. This also duplicates the same topology policy in two
-places.
+`Simulation::step` selects agent `i` while reading `chosen[j]`
+(`src/vwmini.cpp:741-807`). For later agents that value is its default zero velocity; for
+earlier agents it is a decision already affected by ordering. It is therefore not a decision
+from one immutable snapshot, despite the report and architecture claims. Its only conflict
+response is stopping, with no tangential or separation candidate. This explains both failed
+crowd cases: crossing preserves separation by mutual blocking but never reaches either goal,
+while an initially overlapping pair preserves its overlap rather than attempting recovery.
 
-### Medium — path containment/directness and mesh predicates are numerically incomplete
+### High — huge valid duration still does not return after a crowd stalls
 
-`find_path`'s containment helper combines boundary intersections with 64 samples
-(`:312-334`), which cannot establish SIM-002's requirement for every real point of a
-segment. The boundary-tolerance fixture exposes an observable result: a contained direct
-route returns four points rather than the required exact two-point path. Separately,
-float cross products and squared lengths overflow for accepted finite extreme-scale mesh
-coordinates, so an interior point is reported outside.
+The loop stores `remaining` as `float`, subtracts an at-most `0.05f` substep, and has no
+no-progress termination policy (`src/vwmini.cpp:700-867`). After two opposing agents block
+each other, a call to `step(std::numeric_limits<float>::max())` did not return before a
+two-second timeout (status 124). The duration is accepted finite input. This contradicts the
+architecture claim that huge durations terminate safely; the passing native huge-duration
+case has only one agent, which reaches its goal before this failure mode arises.
 
-### Medium — source, tests, and design documentation are not maintainable evidence
+### High — finite extreme-coordinate meshes are not supported safely
 
-All geometry, mesh validation, topology, pathfinding, simulation state, and avoidance
-policy reside in one 721-line translation unit (684 source NCLOC). Clang CFG analysis
-reports a maximum McCabe complexity of 41 in `find_path`, with further dense routines for
-triangulation (30), mesh creation (28), and stepping (24). The rubric therefore limits
-the decomposition category to 13 before source review; the monolithic, duplicated-policy
-implementation warrants a materially lower score.
+Topology matching quantizes every coordinate by `epsilon` to `long long`
+(`src/vwmini.cpp:104-130`). Much of the accepted finite-float range cannot be represented
+that way. A valid CCW triangle using coordinates near `FLT_MAX` is rejected with
+`InvalidArgument`, although all vertices are finite and its signed double area is positive
+and enormous. The same probe shows `length({FLT_MAX, FLT_MAX}) == infinity` and
+`normalized({FLT_MAX, FLT_MAX}) == {0,0}`, violating the supplied header's finite-input
+length contract and usual nonzero-vector normalization semantics. The native sanitizer suite
+does not exercise either accepted-input case.
 
-The architecture document claims that `Impl` holds adjacency and a vertex-deduplication
-map, and that stepping uses waypoint-arrival-time substeps. The submitted `Impl` holds
-only triangles and boundary edges, while stepping uses fixed 0.05-second chunks. The plan
-claims verification for validation, containment, determinism, lifecycle, and crowd
-behavior that its one smoke test does not perform. The model's chat report similarly says
-the architecture/plan are current and the avoidance meets the open-cell criterion; both
-claims are contradicted by the submitted source and public-API results.
+### Medium — mesh validation accepts degenerate and duplicate overlapping input
+
+The triangle check compares *twice* signed area with `epsilon²`
+(`src/vwmini.cpp:257-261`), accepting a triangle with signed area `7.5e-9`, below the
+specified strict `1e-8` threshold. `triangulate_simple_polygon` also accepts the same
+degenerate outline. `NavMesh::create({triangle, triangle})` succeeds, although duplicate
+triangles have overlapping interiors and must be rejected. Strict vertex-in-triangle tests
+miss coincident boundaries, while shared endpoint tests skip the remaining edge-intersection
+checks (`:257-315`).
+
+### Medium — tests and documents do not describe the delivered evidence
+
+All test checks remain `assert` calls. The epsilon edge test explicitly treats rejection of
+its stated valid case as acceptable; the huge-duration test requires neither timely return
+under a blocked crowd nor progress; and the avoidance test checks separation only, so a
+deadlock passes. No test was added in the second repair.
+
+The architecture still says `NavMesh::Impl` holds adjacency and a vertex-deduplication map;
+it actually holds triangles and boundary edges, while `find_path` rebuilds adjacency. It also
+claims candidate velocity selection with snapshot semantics and safe huge-duration stepping,
+which the source does not implement. The plan marks all work packages and verification done.
+This is a material NFR-009/NFR-010 mismatch, not a cosmetic stale comment.
+
+## Maintainability evidence
+
+The final source is **835** physical NCLOC in one translation unit covering numeric policy,
+triangulation, mesh validation, topology, pathfinding, mutable agent state, and avoidance.
+Clang CFG analysis of `Simulation::step` reports 95 basic blocks and 138 edges, for McCabe
+complexity **45**. That gives the decomposition category a 13-point rubric ceiling before
+qualitative review. The coupled decision/integration/route-state loop is directly associated
+with the crowd and huge-duration defects. Positive choices include C++23 value ownership,
+private pImpl state, immutable mesh sharing, no third-party runtime dependency, and
+warning-clean compiler builds.
 
 ## Score
 
+No automatic 40-point safety cap applies: normative conformance did not reproduce a crash,
+sanitizer report, or non-finite/out-of-mesh state. The valid-input nontermination and
+finite-scale numerical failures remain substantial functional defects.
+
 | Area | Score | Assessment |
 |---|---:|---|
-| Architecture and dependency design | 7 / 20 | Value ownership and private pImpl storage are sensible, but one translation unit couples every subsystem and duplicates topology policy. The architecture description also misstates the delivered storage and stepping design. |
-| Decomposition and complexity | 5 / 20 | The CFG-41 maximum establishes a 13-point ceiling. Geometry, mesh validation, pathfinding, agent lifecycle, and avoidance remain in one 684-NCLOC implementation file, with several independently complex routines and no coherent internal modules. |
-| C++ clarity and discipline | 4 / 10 | C++23 values, `expected`, RAII, and warning-clean compiler builds are positives. Dense abbreviated code, unchecked float overflow, the ineffective containment line `ag.pos = ag.pos`, and 1,311 format diagnostics substantially reduce clarity and discipline. |
-| Tests and functional discipline | 1 / 15 | One smoke executable supplies no focused coverage of errors, topology, paths, transitions, numerical edges, or crowds; its assertions vanish in Release. Reported/documented verification substantially overstates the delivered test evidence. |
-| Functional conformance beyond the gate | 18 / 35 | 73/77 provides a real partial implementation, but finite-scale containment, direct boundary routing, both normative feasible crowd cases, epsilon edge matching, and valid huge-duration termination are material contract failures. |
-| **Initial total** | **35 / 100** | |
+| Architecture and dependency design | 6 / 20 | Ownership is sensible, but one translation unit couples all policies and the required architecture record describes storage and stepping behavior that do not exist. |
+| Decomposition and complexity | 5 / 20 | The CFG-45 result sets a 13-point ceiling; the 835-NCLOC god translation unit, unused topology work, and policy-dense `step` justify a materially lower score. |
+| C++ clarity and discipline | 5 / 10 | RAII, values, compiler warning cleanliness, and formatted production source are positives. Test formatting remains broken, and valid finite geometry/vector inputs have severe numeric behavior. |
+| Tests and functional discipline | 1 / 15 | One assert-only smoke executable supplies no effective Release checks and misses every remaining crowd, stalled-duration, extreme-scale, overlap, and degeneracy defect. |
+| Functional conformance beyond the gate | 19 / 35 | 75/77 is meaningful progress over the initial submission, but the crossing and overlap-recovery crowd cases, valid stalled huge-duration termination, finite extreme-scale geometry, and mesh validity probes remain material failures. |
+| **Final total** | **36 / 100** | |
 
-The CMake/API gate passes. The sanitizer run on the insufficient native smoke test did not
-report a memory or undefined-behavior error, so the rubric's narrow automatic 40-point
-safety cap is not invoked. The valid-input nontermination remains a major functional and
-robustness defect.
+## Commands used
 
-## Repair priorities
+```sh
+# Normative conformance
+evaluator/conformance/run.sh \
+  solutions/muse-glimmer-ud-q8-xl-run-01-repair-02 \
+  /tmp/muse-glimmer-r2-conformance
 
-A repair should first make large finite duration handling terminating and speed-bounded,
-centralize scale-safe geometry/topology/continuous-segment predicates, and derive
-adjacency through epsilon-matched complete edges. It should then replace the repulsion
-heuristic with simultaneous, predicted-separation velocity choices that preserve normal
-crossing and overtaking. Split the single implementation unit along geometry, mesh/path,
-and simulation responsibilities; add deterministic regressions for every repaired
-failure, retain them in non-`NDEBUG`-dependent tests, format the source, and correct the
-design/plan claims only after the implementation is verified.
+# Native warning-clean builds and tests
+CC=gcc CXX=g++ cmake -S solutions/muse-glimmer-ud-q8-xl-run-01-repair-02 \
+  -B /tmp/muse-glimmer-r2-g++ -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_CXX_FLAGS='-Wall -Wextra -Wpedantic -Werror'
+cmake --build /tmp/muse-glimmer-r2-g++ --parallel
+ctest --test-dir /tmp/muse-glimmer-r2-g++ --output-on-failure
+CC=clang CXX=clang++ cmake -S solutions/muse-glimmer-ud-q8-xl-run-01-repair-02 \
+  -B /tmp/muse-glimmer-r2-clang -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_CXX_FLAGS='-Wall -Wextra -Wpedantic -Werror'
+cmake --build /tmp/muse-glimmer-r2-clang --parallel
+ctest --test-dir /tmp/muse-glimmer-r2-clang --output-on-failure
+
+# Sanitizer, Release, and library-only configurations
+CC=gcc CXX=g++ cmake -S solutions/muse-glimmer-ud-q8-xl-run-01-repair-02 \
+  -B /tmp/muse-glimmer-r2-san-gcc-final -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' \
+  -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+cmake --build /tmp/muse-glimmer-r2-san-gcc-final --parallel
+ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+  ctest --test-dir /tmp/muse-glimmer-r2-san-gcc-final --output-on-failure
+CC=gcc CXX=g++ cmake -S solutions/muse-glimmer-ud-q8-xl-run-01-repair-02 \
+  -B /tmp/muse-glimmer-r2-release-gcc-final -DCMAKE_BUILD_TYPE=Release
+cmake --build /tmp/muse-glimmer-r2-release-gcc-final --parallel
+ctest --test-dir /tmp/muse-glimmer-r2-release-gcc-final --output-on-failure
+cmake -S solutions/muse-glimmer-ud-q8-xl-run-01-repair-02 \
+  -B /tmp/muse-glimmer-r2-notest -DBUILD_TESTING=OFF
+cmake --build /tmp/muse-glimmer-r2-notest --parallel
+
+# Archive-only formatting check
+clang-format --dry-run --Werror \
+  solutions/muse-glimmer-ud-q8-xl-run-01-repair-02/src/vwmini.cpp \
+  solutions/muse-glimmer-ud-q8-xl-run-01-repair-02/tests/test_basic.cpp
+```
+
+## Final assessment
+
+Muse Glimmer was exceptionally quick to complete both repair cycles. The first repair did
+fix two path/mesh conformance failures; the second was a production-source formatting pass
+rather than the requested avoidance/test/documentation repair. The final archive is a
+compilable, partially conforming implementation with sensible basic ownership, but it is not
+a dependable navigation/crowd library: feasible crossing agents can deadlock, overlapping
+agents do not recover, a valid finite duration can fail to return, and accepted finite numeric
+input is not robust at scale.

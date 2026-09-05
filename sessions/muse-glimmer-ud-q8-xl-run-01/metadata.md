@@ -1,7 +1,7 @@
 # Run Metadata — muse-glimmer-ud-q8-xl-run-01
 
-> **Status: initial implementation frozen and evaluated.** A repair may follow; this
-> metadata identifies the immutable initial source tree rather than a later repair tree.
+> **Status: final after two repairs and evaluated.** This metadata records the immutable
+> initial, repair-01, and repair-02 source archives; repair-02 is the scored final tree.
 
 | Field | Value |
 |---|---|
@@ -21,9 +21,12 @@
 | Repair 01 source fingerprint | `ae7fd95a029b08b8d494e0a17ead6fb01da49912c0ce92e67c1497d7778106d0` |
 | Repair 01 completion report | [`model-repair-01-completion-report.md`](model-repair-01-completion-report.md), supplied in chat rather than written into the workspace |
 | Repair prompt 02 | [`../../evaluations/repair-prompts/muse-glimmer-ud-q8-xl-run-01-repair-02.md`](../../evaluations/repair-prompts/muse-glimmer-ud-q8-xl-run-01-repair-02.md) (SHA-256 `e3c6cea6e091650f60613013deb2345ed11798e05030afe624a78b9e2410fa00`) |
+| Repair 02 source archive | `../../solutions/muse-glimmer-ud-q8-xl-run-01-repair-02/` |
+| Repair 02 source fingerprint | `4247eab34dcad49944a55c657705cbcf2850db15a36aa57fe1c269bf82048b5e` |
+| Repair 02 completion report | [`model-repair-02-completion-report.md`](model-repair-02-completion-report.md), supplied in chat rather than written into the workspace |
 | Completion report | [`model-completion-report.md`](model-completion-report.md), supplied in chat rather than written into the workspace |
 | Session export | No sanitized session artifact is retained in this repository. |
-| Provenance completeness | Initial source, task package fingerprint, completion report, runtime family, precision, output limit, and evaluation are retained; exact Lemonade build, hardware details, timestamps, and session-artifact checksum were not captured. |
+| Provenance completeness | Initial and repair source archives, task-package fingerprint, completion reports, runtime family, precision, reported hardware, output limit, and evaluation are retained; exact Lemonade build, exact host details, timestamps, and session-artifact checksum were not captured. |
 
 Do not place build artifacts or mutable post-run edits in an eventual repair source
 archive.
