@@ -8,7 +8,7 @@
 | Runtime | Venice hosted, `deepseek-v4-flash-0731` |
 | Task revision | Current VWmini task, including NFR-009 and NFR-010 |
 | Final source | [`../solutions/ds4f-unquant-run-01-repair-02/`](../solutions/ds4f-unquant-run-01-repair-02/) |
-| Final tree fingerprint | `af255eadc7c4060bc58ba4182fa7bd3b71266dc30c08c837396d52dc5434d012` |
+| Final tree fingerprint | `b099a119416d40c2cfe12d663fe015778ac374bf6b8a25d50d7a99701b1002ac` |
 | Repair limit | Two repair prompts |
 | Final result | **57 / 100** |
 
@@ -22,11 +22,13 @@ reflex corner.
 
 ## Final state
 
-The final source passes **71/72** public conformance tests: geometry 15/15,
-navmesh/path 24/24, lifecycle 29/29, and crowd 3/4. Crossing, overtaking, and initial
-overlap recovery pass. The close-following reflex-corner fixture still fails: the leader
-reaches its goal, while the follower remains `Moving` at approximately `(1.0001, 2.5768)`,
-about 1.51 m from its goal, unchanged through 30 simulated seconds.
+At finalization, the source passed **71/72** then-current conformance tests. Conformance
+revision 2 added five navmesh/path cases and reran the archived final snapshot: it now
+passes **76/77** (geometry 15/15, navmesh/path 29/29, lifecycle 29/29, crowd 3/4).
+Crossing, overtaking, initial overlap recovery, and every added navmesh/path case pass. The
+close-following reflex-corner fixture still fails: the leader reaches its goal, while the
+follower remains `Moving` at approximately `(1.0001, 2.5768)`, about 1.51 m from its goal,
+unchanged through 30 simulated seconds.
 
 The candidate-native suite reports 34/34 passing cases under GCC and Clang. Its native
 ASan/UBSan build passes. Reproduction used:
@@ -90,7 +92,7 @@ substitute for CFG complexity.
 | Decomposition and complexity | 3 / 20 | The CFG-75, nesting-10 `advance` reaches the metric ceiling before review. Its 339 lines combine every substep phase; dense pair state and bespoke boundary probing further confirm the maintainability failure. |
 | C++ clarity and discipline | 6 / 10 | Value ownership, `std::expected`, RAII, and `[[nodiscard]]` are used well, but magic probe budgets and the policy-dense central routine are hard to safely alter. |
 | Tests and functional discipline | 9 / 15 | 34 deterministic tests and sanitizer runs are valuable, but repair-02 did not add regressions for its replacement solver and missed separation, finite-radius, feasibility, and state-lifetime defects. |
-| Functional conformance beyond the gate | 25 / 35 | 71/72 public conformance and improved visual behavior are meaningful, but the corner terminal stall, overlap probe, valid-input non-finite state, and excessive stand-off remain material. |
+| Functional conformance beyond the gate | 25 / 35 | 76/77 revision-2 conformance and improved visual behavior are meaningful, but the corner terminal stall, overlap probe, valid-input non-finite state, and excessive stand-off remain material. |
 | **Total** | **57 / 100** | |
 
 ## Repair outcome
@@ -99,7 +101,7 @@ substitute for CFG complexity.
 large-duration substep conversion, and several overtaking/corner scenarios. It raised
 public conformance to 70/72 but left crossing and close-following failure.
 2. **Second repair:** replaced the avoidance mechanism and fixed public crossing,
-eaching 71/72. It also corrected the previously reproduced tiny-goal/huge-duration
+reaching 71/72. It also corrected the previously reproduced tiny-goal/huge-duration
 underflow. The new mechanism introduced untested separation and extreme-radius failures
 and did not resolve the close-following terminal stall.
 

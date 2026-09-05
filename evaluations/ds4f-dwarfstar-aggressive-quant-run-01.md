@@ -8,7 +8,7 @@
 | Runtime | Local Dwarfstar DS4; aggressive quantization |
 | Task revision | Pre-planning revision: NFR-009 only; no NFR-010 implementation-plan penalty applies |
 | Final source | [`../solutions/ds4f-dwarfstar-aggressive-quant-run-01-repair-02/`](../solutions/ds4f-dwarfstar-aggressive-quant-run-01-repair-02/) |
-| Final tree fingerprint | `3e57314a87fc2dfd0ea73686ffffc9e763c1beb1f2f287e079ceb3b9c8be689e` |
+| Final tree fingerprint | `9a894abccc7bce965896366e0da3abb6a4c95cd5c70cb5f13c031c09fdba60fb` |
 | Repair limit | Two repair prompts |
 | Final result | **40 / 100 capped** (raw 59 / 100) |
 
@@ -21,11 +21,12 @@ were requested.
 
 ## Final state
 
-The final source builds and exposes the required API. It passes **71/72** current public
-conformance tests: geometry 15/15, navmesh/path 24/24, simulation 29/29, and crowd 3/4.
-It passes the close-following reflex-corner fixture but fails the explicit initially
-overlapping-disc recovery fixture. Candidate-native tests pass 3/3 and normal formatting
-checks pass.
+At finalization, the source built and exposed the required API, passing **71/72**
+then-current conformance tests. Conformance revision 2 added five navmesh/path cases and
+reran the archived final snapshot: it now passes **76/77** (geometry 15/15, navmesh/path
+29/29, simulation 29/29, crowd 3/4). It passes every added navmesh/path case, but still
+fails the explicit initially overlapping-disc recovery fixture. Candidate-native tests pass
+3/3 and normal formatting checks pass.
 
 A valid finite `step(FLT_MAX)` triggers an out-of-range float-to-`int` conversion in
 `Simulation::step`; UBSan reports it. This is undefined behavior on valid public input and
@@ -58,7 +59,7 @@ diagnostics, not correctness scores, but they give scale to the architecture rev
 | Decomposition and complexity | 8 / 20 | CFG 33 and nesting 5 permit a higher ceiling, but duplicated avoidance candidate search and concentrated navmesh/simulation policies materially lower the review score. |
 | C++ clarity and discipline | 7 / 10 | Ownership/value semantics are clear, but unused/redundant state and long algorithmic functions make safe changes costly. |
 | Tests and functional discipline | 10 / 15 | Deterministic tests and repair regressions exist, but production helpers serve as test oracles and final numerical/overlap defects were missed. |
-| Functional conformance beyond the gate | 21 / 35 | 71/72 public conformance is offset by interval-coverage, numeric, and overlap-recovery defects. |
+| Functional conformance beyond the gate | 21 / 35 | 76/77 revision-2 conformance is offset by interval-coverage, numeric, and overlap-recovery defects. |
 | **Raw total** | **59 / 100** | |
 
 ## Safety gate
