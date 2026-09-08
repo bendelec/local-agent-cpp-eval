@@ -52,7 +52,8 @@ state --> api
 ## Build boundary
 
 `VWMINI_BUILD_LAB` defaults to `OFF` in `evaluator/CMakeLists.txt`. Enabling it runs
-`find_package(SDL3 CONFIG REQUIRED)` and builds `vwmini_lab`, linked to the reference
-`vwmini::vwmini` target. SDL3 is confined to the lab. The candidate package and public
-VWmini library interface use only the standard library; the headless conformance harness
-separately requires GoogleTest.
+`find_package(SDL3 CONFIG REQUIRED)` and builds `vwmini_lab`. By default it links to the
+reference `vwmini::vwmini` target; `VWMINI_EVALUATOR_SOURCE_DIR` can instead select any
+provider project exposing that target, including an immutable candidate archive. SDL3 is
+confined to the lab. The candidate package and public VWmini library interface use only
+the standard library; the headless conformance harness separately requires GoogleTest.

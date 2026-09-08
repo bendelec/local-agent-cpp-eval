@@ -6,7 +6,7 @@
 |---|---|
 | Model | Qwen 3.8 Flash |
 | Runtime | Local Lemonade / llama.cpp; Q5_K_L quantization |
-| Task revision | Current VWmini task, including NFR-009 architecture and NFR-010 implementation-plan deliverables; conformance revision 2 |
+| Task revision | Current VWmini task, including NFR-009 architecture and NFR-010 implementation-plan deliverables; conformance revision 3 |
 | Final source | [`../solutions/qwen38-flash-q5-kl-run-01-repair-02/`](../solutions/qwen38-flash-q5-kl-run-01-repair-02/) |
 | Final tree fingerprint | `d250039e8adee34a1497fad507a06dbc3b9509271aaa6f197698b67f5af72f81` |
 | Repair limit | Two repair prompts |
@@ -35,7 +35,7 @@ teleportation across gaps and a speed-budget violation from those additions.
 
 The second repair deleted residual state, range-checked double-to-float narrowing, and reused the
 existing mesh segment query for motion. It adds three useful regressions for the previous defects.
-The resulting archive passes all advertised checks:
+The resulting archive passes all advertised checks at the then-current revision 2:
 
 - **77/77** conformance: geometry 15/15, navmesh/path 29/29, lifecycle 29/29, crowd 4/4;
 - **81/81** native GTest cases in Debug and Release;
@@ -81,6 +81,22 @@ None of these probes caused a crash, a sanitizer report, or non-finite/out-of-me
 normative suite, so the 40-point safety cap does not apply. They are nevertheless substantial
 functional deductions.
 
+### Conformance revision 3 and visual smoke test
+
+The two independent findings were promoted to the public suite as one navmesh/path and three
+simulation regressions. The final immutable archive now passes **78/82** at conformance revision
+3: geometry 15/15, navmesh/path 29/30, simulation 30/33, and crowd 4/4. It fails exactly the
+new epsilon-band direct-route, `NoPath`-motion, avoidance-tunnelling, and stored-position
+speed-budget cases described above; the new smallest-finite-duration finiteness case passes.
+These outcomes were already reflected in the 75-point score, so the score is unchanged.
+
+The interactive SDL lab was also built against this archive through its public
+`vwmini::vwmini` target (`VWMINI_EVALUATOR_SOURCE_DIR`), rather than the reference library.
+It launched successfully, and operator-directed graphical smoke testing found no behavioral
+issue: ordinary interaction and the tested visual corner cases matched the reference closely.
+This useful manual evidence does not override the deterministic epsilon-band and speed-budget
+failures above.
+
 ## Implementation size and complexity
 
 The final archive has **1,661 implementation NCLOC** across 17 `src/` files, measured with:
@@ -107,7 +123,7 @@ motion-shortening policy rather than raw size.
 | Decomposition and complexity | 14 / 20 | Units are reasonably bounded and the observed CFG maximum is 24, but `simulation.cpp` couples integration, float narrowing, exact coverage, and route progress. The segment-query reuse made a shared defect affect both paths and motion. |
 | C++ clarity and discipline | 8 / 10 | RAII, `std::expected`, const queries, deterministic iteration, strict warnings, and checked narrowing are strong. The unchecked ID exhaustion and endpoint-rounding contract gap reduce confidence in the otherwise careful numeric policy. |
 | Tests and functional discipline | 11 / 15 | 81 deterministic tests, Release activation, sanitizers, and regressions for independently found defects are substantial. The gap test shares the same faulty containment oracle, while epsilon-band connectivity and half-ULP rounding were missed. |
-| Functional conformance beyond the gate | 26 / 35 | Perfect 77/77 public conformance and all crowd fixtures are meaningful. Epsilon-band direct routing/tunnelling and speed-cap violation are reproducible valid-input failures in core path and motion contracts. |
+| Functional conformance beyond the gate | 26 / 35 | 78/82 revision-3 conformance and all crowd fixtures are meaningful. Epsilon-band direct routing/tunnelling and stored-speed failures remain reproducible valid-input core path and motion defects. |
 | **Total** | **75 / 100** | |
 
 ## Architecture and test observations
@@ -132,8 +148,9 @@ Simulation uses only public `NavMesh` APIs and lists deleted containment-shrink 
 ## Commands and evidence
 
 ```sh
-# Public conformance
-./evaluator/conformance/run.sh solutions/qwen38-flash-q5-kl-run-01-repair-02
+# Public conformance (revision 3)
+./evaluator/conformance/run.sh solutions/qwen38-flash-q5-kl-run-01-repair-02 \
+  /tmp/qwen38-flash-r3-conformance
 
 # Native Debug / Release and library-only checks
 cmake -S solutions/qwen38-flash-q5-kl-run-01-repair-02 -B /tmp/qwen38-flash-r2-native \
@@ -162,13 +179,17 @@ clang-format --dry-run --Werror $(find solutions/qwen38-flash-q5-kl-run-01-repai
 ```
 
 The independent epsilon-band and rounding probes were compiled only against the final archive and
-executed from `/tmp`; they did not modify the candidate or source archive.
+executed from `/tmp`; they did not modify the candidate or source archive. The interactive lab was
+built with `-DVWMINI_BUILD_LAB=ON`,
+`-DVWMINI_EVALUATOR_SOURCE_DIR=solutions/qwen38-flash-q5-kl-run-01-repair-02`, and
+`-DBUILD_TESTING=OFF`; it linked only through the public library target.
 
 ## Final assessment
 
 Qwen 3.8 Flash produced the strongest public behavior of the evaluated local candidates so far:
-it starts with all four crowd cases working and reaches full normative conformance after a focused
-numeric repair. Its internal organization, build discipline, and error handling are also strong.
+it starts with all four crowd cases working, reached full revision-2 conformance after a focused
+numeric repair, and now passes 78/82 at revision 3. Its internal organization, build discipline,
+and error handling are also strong.
 
 The final score is held below release-quality by a subtle but important mismatch between exact
 geometric-edge interval logic and epsilon-tolerant public containment, plus a remaining

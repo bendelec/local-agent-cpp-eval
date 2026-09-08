@@ -8,6 +8,7 @@
 #include <vwmini/simulation.hpp>
 
 #include <cmath>
+#include <limits>
 #include <vector>
 
 using namespace vwmini;
@@ -294,6 +295,136 @@ TEST(Simulation_Step, ZeroDurationChangesNothing)
     const auto state = sim.agent(id);
     ASSERT_TRUE(state.has_value());
     EXPECT_EQ(state->position, (Vec2{5.0f, 5.0f}));
+}
+
+TEST(Simulation_Step, EpsilonBandNoPathAgentDoesNotTunnel)
+{
+    // A valid in-mesh goal on a disconnected epsilon-band island must establish
+    // NoPath; stepping must not carry the agent across either uncovered gap.
+    const NavMesh mesh = make_epsilon_band_islands_mesh();
+    const Vec2 start{0.0f, 0.0f};
+    const Vec2 goal{10.0f, 0.0f};
+    ASSERT_TRUE(mesh.contains(start));
+    ASSERT_TRUE(mesh.contains(goal));
+    Simulation sim(mesh);
+    AgentConfig config;
+    config.position = start;
+    config.goal = goal;
+    config.arrival_radius = 0.0f;
+    config.max_speed = 20.0f;
+    const auto id = sim.add_agent(config);
+    ASSERT_TRUE(id.has_value());
+
+    const auto before = sim.agent(*id);
+    ASSERT_TRUE(before.has_value());
+    EXPECT_EQ(before->status, AgentStatus::NoPath);
+    ASSERT_TRUE(sim.step(0.5f).has_value());
+
+    const auto after = sim.agent(*id);
+    ASSERT_TRUE(after.has_value());
+    EXPECT_EQ(after->status, AgentStatus::NoPath);
+    EXPECT_EQ(after->position, start);
+    EXPECT_EQ(after->velocity, (Vec2{0.0f, 0.0f}));
+}
+
+TEST(Simulation_Step, EpsilonBandAvoidanceDoesNotTunnel)
+{
+    // This goal is reachable within the tall first island. An overlapping idle peer
+    // may require avoidance, but cannot turn the local response into a jump through
+    // the two disconnected epsilon-band islands to the east.
+    const NavMesh mesh = make_epsilon_band_islands_mesh();
+    Simulation sim(mesh);
+
+    AgentConfig idle;
+    idle.position = Vec2{-0.49f, 0.0f};
+    idle.radius = 0.25f;
+    ASSERT_TRUE(sim.add_agent(idle).has_value());
+
+    AgentConfig mover;
+    mover.position = Vec2{0.0f, 0.0f};
+    mover.goal = Vec2{0.0f, 150.0f};
+    mover.radius = 0.25f;
+    mover.arrival_radius = 0.0f;
+    mover.max_speed = 10000.0f;
+    const auto id = sim.add_agent(mover);
+    ASSERT_TRUE(id.has_value());
+    const auto before = sim.agent(*id);
+    ASSERT_TRUE(before.has_value());
+    ASSERT_EQ(before->status, AgentStatus::Moving);
+
+    ASSERT_TRUE(sim.step(0.001f).has_value());
+    const auto state = sim.agent(*id);
+    ASSERT_TRUE(state.has_value());
+    EXPECT_TRUE(is_finite(state->position));
+    EXPECT_TRUE(mesh.contains(state->position));
+    EXPECT_TRUE(segment_contained(mesh, before->position, state->position));
+    EXPECT_LT(state->position.x, 2.0f);
+}
+
+TEST(Simulation_Step, FarOriginStoredPositionHonorsSpeedBudget)
+{
+    // At x=10000 the next representable float is farther away than this frame's
+    // speed allowance. The externally stored position must not round beyond it.
+    auto created = NavMesh::create({
+        Polygon{{{9990.0f, -10.0f}, {10020.0f, -10.0f}, {9990.0f, 10.0f}}},
+    });
+    ASSERT_TRUE(created.has_value());
+    const NavMesh mesh = std::move(*created);
+    constexpr Vec2 start{10000.0f, 0.0f};
+    constexpr Vec2 goal{10004.0f, 0.0f};
+    constexpr float max_speed = 1.0f;
+    constexpr float elapsed = 0.0006f;
+    ASSERT_TRUE(mesh.contains(start));
+    ASSERT_TRUE(mesh.contains(goal));
+
+    const float next = std::nextafter(start.x, std::numeric_limits<float>::infinity());
+    const double ulp = static_cast<double>(next) - static_cast<double>(start.x);
+    ASSERT_GT(static_cast<double>(elapsed), ulp / 2.0);
+    ASSERT_LT(static_cast<double>(elapsed), ulp);
+
+    Simulation sim(mesh);
+    AgentConfig config;
+    config.position = start;
+    config.goal = goal;
+    config.arrival_radius = 0.0f;
+    config.max_speed = max_speed;
+    const auto id = sim.add_agent(config);
+    ASSERT_TRUE(id.has_value());
+    const auto before = sim.agent(*id);
+    ASSERT_TRUE(before.has_value());
+    ASSERT_EQ(before->status, AgentStatus::Moving);
+
+    ASSERT_TRUE(sim.step(elapsed).has_value());
+    const auto after = sim.agent(*id);
+    ASSERT_TRUE(after.has_value());
+    const double dx = static_cast<double>(after->position.x) -
+                      static_cast<double>(before->position.x);
+    const double dy = static_cast<double>(after->position.y) -
+                      static_cast<double>(before->position.y);
+    const double displacement = std::hypot(dx, dy);
+    const double allowance = static_cast<double>(before->max_speed) *
+                             static_cast<double>(elapsed);
+
+    EXPECT_TRUE(is_finite(after->position));
+    EXPECT_TRUE(mesh.contains(after->position));
+    EXPECT_LE(displacement, allowance);
+}
+
+TEST(Simulation_Step, SmallestFiniteDurationKeepsStateFinite)
+{
+    Simulation sim(make_square_mesh());
+    AgentConfig config;
+    config.position = Vec2{2.0f, 5.0f};
+    config.goal = Vec2{8.0f, 5.0f};
+    const auto id = sim.add_agent(config);
+    ASSERT_TRUE(id.has_value());
+
+    ASSERT_TRUE(sim.step(std::numeric_limits<float>::denorm_min()).has_value());
+    const auto state = sim.agent(*id);
+    ASSERT_TRUE(state.has_value());
+    EXPECT_TRUE(is_finite(state->position));
+    EXPECT_TRUE(is_finite(state->velocity));
+    EXPECT_LE(length(state->velocity), state->max_speed + kEps);
 }
 
 TEST(Simulation_Step, MotionStaysWithinMaxSpeedAndMesh)

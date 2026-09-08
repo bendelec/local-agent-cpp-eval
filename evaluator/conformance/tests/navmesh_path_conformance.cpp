@@ -351,6 +351,22 @@ TEST(FindPath, DisconnectedEndpointsIsNoPath)
                  ErrorCode::NoPath);
 }
 
+TEST(FindPath, EpsilonBandDoesNotConnectDisjointComponents)
+{
+    // Each endpoint is accepted by MSH-006's edge-tolerance policy, but the direct
+    // segment crosses uncovered gaps between three topologically disconnected islands.
+    const NavMesh mesh = make_epsilon_band_islands_mesh();
+    const Vec2 start{0.0f, 0.0f};
+    const Vec2 goal{10.0f, 0.0f};
+    EXPECT_TRUE(mesh.contains(start));
+    EXPECT_TRUE(mesh.contains(Vec2{5.0f, 0.0f}));
+    EXPECT_TRUE(mesh.contains(goal));
+    EXPECT_FALSE(mesh.contains(Vec2{2.0f, 0.0f}));
+    EXPECT_FALSE(mesh.contains(Vec2{8.0f, 0.0f}));
+
+    expect_error(find_path(mesh, start, goal), ErrorCode::NoPath);
+}
+
 TEST(FindPath, DirectPathIsExactlyStartGoal)
 {
     const NavMesh mesh = make_square_mesh();

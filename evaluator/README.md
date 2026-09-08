@@ -41,6 +41,25 @@ cmake --build build/lab --target vwmini_lab --parallel
 ./build/lab/lab/vwmini_lab
 ```
 
+The lab defaults to the reference library. To smoke-test a provider through the same
+public-API-only seam, select its CMake source directory:
+
+```sh
+cmake -S evaluator -B build/lab-provider -DVWMINI_BUILD_LAB=ON \
+  -DVWMINI_EVALUATOR_SOURCE_DIR=/path/to/provider-project
+cmake --build build/lab-provider --target vwmini_lab --parallel
+./build/lab-provider/lab/vwmini_lab
+```
+
+If the provider supports a test-disable option, pass its documented option as well. For
+the archived Qwen Flash provider used in the evaluation record, the exact configuration was:
+
+```sh
+cmake -S evaluator -B build/lab-qwen -DVWMINI_BUILD_LAB=ON \
+  -DVWMINI_EVALUATOR_SOURCE_DIR=solutions/qwen38-flash-q5-kl-run-01-repair-02 \
+  -DBUILD_TESTING=OFF
+```
+
 Lab controls: left click selects an agent or chooses a spawn; right click chooses a
 target; `A` adds an agent; `G` updates the selected agent's goal; drag a vertex and
 release to rebake; `Space` pauses; `N` steps; `R` resets; middle drag pans; wheel zooms;

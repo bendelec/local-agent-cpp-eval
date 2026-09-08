@@ -148,4 +148,18 @@ void expect_error(const vwmini::Result<T>& result, vwmini::ErrorCode code)
     return std::move(result).value();
 }
 
+/// Three disconnected triangles whose bases lie within MSH-006's epsilon band of y=0.
+/// The points (0,0), (5,0), and (10,0) are individually contained, but the intervals
+/// between them are uncovered and must not become a traversable connection.
+[[nodiscard]] inline vwmini::NavMesh make_epsilon_band_islands_mesh()
+{
+    constexpr float base_y = kEps / 2.0f;
+    auto result = vwmini::NavMesh::create({
+        vwmini::Polygon{{{-1.0f, base_y}, {1.0f, base_y}, {0.0f, 150.0f}}},
+        vwmini::Polygon{{{4.0f, base_y}, {6.0f, base_y}, {5.0f, 1.0f}}},
+        vwmini::Polygon{{{9.0f, base_y}, {11.0f, base_y}, {10.0f, 1.0f}}},
+    });
+    return std::move(result).value();
+}
+
 } // namespace vwmini_conformance

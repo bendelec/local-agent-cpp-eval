@@ -36,6 +36,41 @@ constexpr float kOverlapTolerance = 1.0e-3f;
     return speed > maximum && speed > 0.0f ? velocity * (maximum / speed) : velocity;
 }
 
+[[nodiscard]] double stored_distance(Vec2 first, Vec2 second) noexcept
+{
+    return std::hypot(static_cast<double>(second.x) - static_cast<double>(first.x),
+                      static_cast<double>(second.y) - static_cast<double>(first.y));
+}
+
+/// Narrows an ideal endpoint to a representable position without letting rounding spend
+/// more than this substep's speed budget. A no-op is preferable to a one-ULP overshoot.
+[[nodiscard]] Vec2 bounded_stored_position(Vec2 start, Vec2 ideal, float maximum_distance) noexcept
+{
+    if (stored_distance(start, ideal) <= static_cast<double>(maximum_distance)) {
+        return ideal;
+    }
+
+    Vec2 best = start;
+    double low = 0.0;
+    double high = 1.0;
+    for (int iteration = 0; iteration < 24; ++iteration) {
+        const double fraction = (low + high) * 0.5;
+        const Vec2 candidate{
+            static_cast<float>(static_cast<double>(start.x) +
+                               (static_cast<double>(ideal.x) - static_cast<double>(start.x)) * fraction),
+            static_cast<float>(static_cast<double>(start.y) +
+                               (static_cast<double>(ideal.y) - static_cast<double>(start.y)) * fraction),
+        };
+        if (stored_distance(start, candidate) <= static_cast<double>(maximum_distance)) {
+            best = candidate;
+            low = fraction;
+        } else {
+            high = fraction;
+        }
+    }
+    return best;
+}
+
 [[nodiscard]] Error fail(ErrorCode code, std::string message)
 {
     return Error{code, std::move(message)};
@@ -282,8 +317,17 @@ struct Simulation::Impl {
 
         for (std::size_t index = 0; index < agents.size(); ++index) {
             AgentRecord& agent = agents[index];
-            agent.state.velocity = chosen[index];
-            agent.state.position = agent.state.position + chosen[index] * seconds;
+            const Vec2 previous = agent.state.position;
+            const Vec2 ideal = previous + chosen[index] * seconds;
+            const Vec2 stored = bounded_stored_position(previous, ideal,
+                                                        agent.state.max_speed * seconds);
+            agent.state.position = stored;
+            agent.state.velocity = {
+                static_cast<float>((static_cast<double>(stored.x) - static_cast<double>(previous.x)) /
+                                   static_cast<double>(seconds)),
+                static_cast<float>((static_cast<double>(stored.y) - static_cast<double>(previous.y)) /
+                                   static_cast<double>(seconds)),
+            };
             advance_route(agent);
         }
     }
