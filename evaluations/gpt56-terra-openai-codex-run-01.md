@@ -9,7 +9,7 @@
 | Task revision | Current VWmini task including NFR-009/NFR-010; conformance revision 3 (82 tests) |
 | Initial source | [`../solutions/gpt56-terra-openai-codex-run-01/`](../solutions/gpt56-terra-openai-codex-run-01/) |
 | Initial tree fingerprint | `460a62ec1187f329df1a02f9a4420484cb46646cce72409b309bba6bf0496c2c` |
-| State | Initial evaluation complete; repair 01 requested; final score deferred |
+| State | Repair 01 evaluated; final repair requested; final score deferred |
 
 The immutable initial archive was copied from the completed external workspace while omitting its
 single generated `build/` tree. A post-copy source comparison and the fingerprint above matched
@@ -119,5 +119,40 @@ cmake --build /tmp/gpt56-terra-library-only --parallel
 
 The required focused repair is recorded in
 [`repair-prompts/gpt56-terra-openai-codex-run-01-repair-01.md`](repair-prompts/gpt56-terra-openai-codex-run-01-repair-01.md).
-A later archive must be stored as `solutions/gpt56-terra-openai-codex-run-01-repair-01/`; do not
-modify the initial source archive.
+
+## Repair 01 outcome
+
+Repair 01 is archived at
+[`../solutions/gpt56-terra-openai-codex-run-01-repair-01/`](../solutions/gpt56-terra-openai-codex-run-01-repair-01/),
+fingerprint `8e45304b547cb9054ce5a57817f63f89d582134c9ad0cc8467a082e43a328956`.
+It correctly added a checked formatting configuration, a `BUILD_TESTING=OFF`-honouring build,
+double-based stored endpoint accounting, finite tiny-duration stepping, and stronger project
+regressions. Fresh GCC Debug/Release tests, Clang tests, Clang ASan/UBSan/float-cast-overflow
+tests, the format check, and a library-only build all pass. The repair also raises public results
+to **81/82**: G 15/15, N 30/30, S 33/33, C 3/4.
+
+The remaining public failure is close reflex-corner following: the leader reaches but the follower
+remains `Moving` with zero velocity after the time budget. A trace places it at the tolerance
+fringe near `{1.0001,1.0001}`; a fresh route query from that clamped position cannot reach either
+its original portal or goal. Thus a mesh safety clamp can strand a valid route instead of
+preserving route progress.
+
+Independent probes also found defects outside the current public suite:
+
+- a finite L-shaped mesh at `FLT_MAX` scale accepts a direct path through its unwalkable missing
+  corner because `segment_contained` performs `Vec2` subtraction and `dot`/`cross` in `float`
+  before widening;
+- literal triangles and ear clipping compare twice-area `orient` to the signed-area threshold,
+  accepting a triangle of signed area `7.5e-9` although `epsilon * epsilon` is `1e-8`; and
+- `normalized({denorm_min, 0})` produces `{inf, NaN}`, while a maximum-finite diagonal collapses
+  to `{0,0}`.
+
+The simulation refactor is clearer about stored motion but grew to 619 physical source lines, and
+`select_separated_motions` has clang-tidy cognitive complexity 45. `NavMesh::create` remains 92.
+These are maintainability concerns rather than a gate, but the final repair should avoid another
+broad policy layer.
+
+No crash, sanitizer report, or normative non-finite/out-of-mesh state was reproduced; the safety
+cap still does not apply. A final repair is necessary and is specified in
+[`repair-prompts/gpt56-terra-openai-codex-run-01-repair-02.md`](repair-prompts/gpt56-terra-openai-codex-run-01-repair-02.md).
+Final scoring remains deferred.

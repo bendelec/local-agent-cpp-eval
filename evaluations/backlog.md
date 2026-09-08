@@ -9,15 +9,15 @@ VWmini task (NFR-009 and NFR-010) and conformance revision 3 (82 tests).
 
 | Run ID | Model | Provider | Status |
 |---|---|---|---|
-| `gpt56-terra-openai-codex-run-01` | GPT-5.6 terra | OpenAI Codex API subscription; `gpt-5.6-terra` | Initial round evaluated (78/82); repair 01 requested |
+| `gpt56-terra-openai-codex-run-01` | GPT-5.6 terra | OpenAI Codex API subscription; `gpt-5.6-terra` | Repair 01 evaluated (81/82); final repair requested |
 | `qwen38-max-venice-run-01` | Qwen 3.8 Max | Venice API; `qwen-3-8-max` | Seed prepared; not started |
 | `ds4-pro-venice-run-01` | DeepSeek V4 Pro | Venice API; `deepseek-v4-pro-0813` | Seed prepared; not started |
 
 Each run will temporarily and without committing override the provider `models.json` listing to
 a **128 Ki** (`131072` token) context window, matching the other candidates. Record the effective
 request/runtime configuration, task revision, completion artifact, and source fingerprint at
-intake. Archive a completed round immediately. Keep that completed external workspace read-only; prepare a
-separate repair workspace from the preserved source when a repair is requested.
+intake. Archive every completed round immediately. Source archives remain read-only; a repair workspace
+may be mutable, but its completed states must be captured as new immutable archives.
 
 ## Deferred
 
