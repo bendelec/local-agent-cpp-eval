@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.23)
+project(vwmini_consumer LANGUAGES CXX)
+add_subdirectory("${VWMINI_SOURCE_DIR}" vwmini_build)
+add_executable(consumer main.cpp)
+target_link_libraries(consumer PRIVATE vwmini::vwmini)
+target_compile_features(consumer PRIVATE cxx_std_23)
