@@ -9,7 +9,7 @@ VWmini task (NFR-009 and NFR-010) and conformance revision 3 (82 tests).
 
 | Run ID | Model | Provider | Status |
 |---|---|---|---|
-| `gpt56-terra-openai-codex-run-01` | GPT-5.6 terra | OpenAI Codex API subscription; `gpt-5.6-terra` | Repair 01 evaluated (81/82); final repair requested |
+| `gpt56-terra-openai-codex-run-01` | GPT-5.6 terra | OpenAI Codex API subscription; `gpt-5.6-terra` | Complete: final repair evaluated, 81/82; **40/100 safety-capped** |
 | `qwen38-max-venice-run-01` | Qwen 3.8 Max | Venice API; `qwen-3-8-max` | Seed prepared; not started |
 | `ds4-pro-venice-run-01` | DeepSeek V4 Pro | Venice API; `deepseek-v4-pro-0813` | Seed prepared; not started |
 
