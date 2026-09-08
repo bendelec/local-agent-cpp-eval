@@ -7,6 +7,7 @@ local-vs-hosted runs of the same model.
 
 | Run ID | Model | Runtime / precision | Task revision | Normative conformance | Overall score | State | Detail |
 |---|---|---|---|---|---:|---|---|
+| `gpt56-terra-openai-codex-run-01` | GPT-5.6 terra | OpenAI Codex API subscription; `gpt-5.6-terra` | Current revision: NFR-009 and NFR-010 | **81/82**; close reflex-corner follower stalls | **40/100** (raw 72; safety cap) | Final after two repairs | [evaluation](gpt56-terra-openai-codex-run-01.md) |
 | `ds4f-dwarfstar-aggressive-quant-run-01` | DeepSeek V4 Flash | Local Dwarfstar DS4; aggressive quantization | Pre-planning revision: NFR-009 only | **80/82**; stored-position speed cap and overlap recovery fail | **40/100** (raw 59; safety cap) | Final after two repairs | [evaluation](ds4f-dwarfstar-aggressive-quant-run-01.md) |
 | `ds4f-unquant-run-01` | DeepSeek V4 Flash | Venice hosted; `deepseek-v4-flash-0731` | Current revision: NFR-009 and NFR-010 | **80/82**; stored-position speed cap and follower stall fail | **57/100** | Final after two repairs | [evaluation](ds4f-unquant-run-01.md) |
 | `qwen38-27b-q8-xl-run-01` | Qwen 3.8 27B | Local Lemonade / llama.cpp; Q8_K_XL GGUF | Current revision: NFR-009 and NFR-010 | **79/82**; finite-extreme, stored-speed, and follower failures | **68/100** | Final after two repairs | [evaluation](qwen38-27b-q8-xl-run-01.md) |
