@@ -1,35 +1,34 @@
-# Final Repair Follow-up
+# Fix blocked local avoidance in an inside corner
 
-Continue from the first repaired VWmini library. This is a **small, final, focused** repair. Preserve the fixed public API, the now-passing geometry/navmesh/lifecycle/storage behavior, CMake test gating, deterministic snapshot-based stepping, and the successful crossing, overtaking, overlap-recovery, and tight-corridor cases. Do not replace the project wholesale; remove or weaken tests; hard-code coordinates, meshes, routes, agent IDs, or scenario-specific behavior; add third-party dependencies, global mutable state, or a global crowd planner.
+Fix a blocked local-avoidance issue in the VWmini library. Keep the public API unchanged and preserve the existing geometry, navmesh, lifecycle, numeric movement, build, and crowd behavior. Make a small, targeted correction; do not replace the project wholesale, remove or weaken tests, hard-code particular coordinates, meshes, routes, agent IDs, or trajectories, add dependencies, introduce global mutable state, or add a global crowd planner.
 
-The first repair correctly fixed the finite-vector, stored-float speed-bound, library-only CMake, and identifier-exhaustion issues. GCC and Clang ASan/UBSan candidate tests pass, library-only configuration now works, and conformance now passes **81/82**. The sole remaining failing normative case is a general local-avoidance progress failure.
+## Problem report
 
-## Restore close-following progress around a reflex corner
+A close follower can become permanently stuck while rounding an inside corner behind an agent that has already reached a nearby, distinct goal. The follower remains `Moving` but reports zero velocity indefinitely even though there is a valid route and enough room to pass without disc overlap.
 
-The normative scenario is a one-metre-wide L passage: bottom arm `[0,5] x [0,1]`, left arm `[0,1] x [1,5]`; two radius-`0.25`, speed-`1.4` agents start at `{2.5,0.5}` and `{3.1,0.5}` and have distinct goals `{0.5,3.0}` and `{0.5,4.0}`, respectively, with arrival radius `0.10`. They begin already separated. After 600 calls to `step(1/60)`, the leader reaches but the follower remains `Moving` with zero velocity, stranded near the leader in the vertical arm.
+The issue is reproducible in a one-metre-wide L passage with a horizontal bottom arm `[0,5] x [0,1]` and vertical left arm `[0,1] x [1,5]`. Two radius-`0.25`, speed-`1.4` agents start at `{2.5,0.5}` and `{3.1,0.5}`. Their distinct goals are `{0.5,3.0}` and `{0.5,4.0}`, both with arrival radius `0.10`. The first agent reaches, but the follower can stop near it in the vertical arm instead of reaching its own goal.
 
-The prior change that omits a speculative moving-neighbor margin for a `Reached` neighbor was sound for the tight straight corridor, but it did not solve this local minimum. The current scorer ranks feasible candidates solely by instantaneous dot-product progress toward the desired route velocity. Since zero velocity is a feasible candidate and every safe immediate escape/tangential/retreat candidate has negative route progress, the stateless replan selects zero forever.
+The fixed velocity sampler scores feasible choices only by immediate alignment with the desired route velocity. A zero-velocity fallback can therefore beat every safe tangential or short retreat choice when those choices initially have negative route alignment. Repeating this stateless choice creates a local minimum.
 
-Fix this as a **general deterministic local recovery policy**, not as a condition keyed to this mesh, position, agent order, goal, or test. For example, a blocked moving agent can select a deterministic contained escape/tangent direction and retain that choice only until it regains a collision-safe route-progress motion. Another small route-aware policy is acceptable. The essential properties are:
+## Required behavior
 
-- a feasible close follower must retain or regain forward route progress instead of remaining indefinitely `Moving` at zero velocity;
-- every committed stored endpoint remains finite, continuously in the mesh, and within its real stored-position speed budget;
-- agents that were initially separated never get closer than the required radius sum (with the documented `1e-3` tolerance);
-- decisions stay deterministic and are planned from the frozen substep snapshot; and
-- non-moving agents remain stationary and are not given a hypothetical motion that differs from commit.
+Implement a general, deterministic local recovery rule for a blocked moving agent. A small per-agent recovery/yield state is acceptable if it has a clear lifecycle and reset condition. For example, when no safe forward candidate exists, select a deterministic contained escape or tangent direction and retain it only until a collision-safe, route-progressing choice is available again. Other small route-aware solutions are welcome.
 
-Do not relax the separation floor, teleport an agent, turn a reachable route into `NoPath`, or trade this case for failures in the existing crossing, overtaking, overlap-recovery, narrow-corridor containment, replay, or tight-corridor tests. Keep the correction local and understandable; a tiny per-agent recovery state is acceptable if it has a clear lifecycle and reset conditions.
+The correction must preserve these invariants:
 
-## Add the missing regression and correct the documentation
+- a follower in a feasible passage regains route progress rather than staying `Moving` with zero velocity indefinitely;
+- committed stored positions and velocities remain finite and obey the actual stored-position speed bound;
+- motion stays continuously within the navmesh;
+- agents that start separated preserve disc separation to the documented `1e-3` tolerance;
+- planning remains deterministic and based on the frozen substep snapshot; and
+- Idle, Reached, and NoPath agents remain stationary rather than receiving an avoidance motion that is not committed.
 
-The first repair's `FollowerPassesReachedLeaderInTightCorridor` is a useful straight-corridor test, but it is not the requested reflex-corner close-following regression and passes while the normative L scenario fails. Add a focused candidate test matching the L-passage *class* above through the public API. On every step, check both agents for finite positions/velocities, mesh containment, actual reported speed, and separation. Assert that both reach within the 600-step budget. Retain the existing test; do not merely substitute it.
+Do not relax separation, teleport an agent, convert a reachable goal to `NoPath`, or regress the established crossing, overtaking, initially-overlapping-agent recovery, narrow-corridor containment, deterministic replay, or tight-corridor behavior.
 
-Update the architecture and implementation-plan documents after the implementation works. Distinguish the already-fixed immobile-neighbor margin from the new blocked-agent progress/recovery rule; do not claim that the straight-corridor regression covered the reflex case before it did.
+## Tests and documentation
 
-Before completion, run and report actual outcomes for:
+Add a concise public-API regression test for the L-passage close-following case described above. At each step, check finite positions and velocities, mesh containment, reported speed, and pair separation; verify both agents reach within ten seconds. Keep the existing straight tight-corridor test as separate coverage.
 
-1. clean GCC Debug and Release builds/tests with `-Wall -Wextra -Wpedantic`;
-2. a clean Clang build/test with the same warnings;
-3. Clang ASan/UBSan tests if available;
-4. a `BUILD_TESTING=OFF` library-only configure/build without GTest; and
-5. clang-format check mode over submitted C++ sources and headers, excluding generated build trees.
+Update the architecture and implementation-plan documentation once the implementation is complete. Describe the actual blocked-agent recovery rule and distinguish it from the existing treatment of stationary neighbors in narrow corridors. Keep claims factual.
+
+Before finishing, run the project’s Debug and Release GCC test builds with warnings enabled, a Clang test build, sanitizer tests if available, a library-only `BUILD_TESTING=OFF` build without GTest, and clang-format check mode over submitted C++ sources and headers. Report the commands and actual results.
