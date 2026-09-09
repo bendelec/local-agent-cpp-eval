@@ -9,7 +9,9 @@
 | Task revision | Current VWmini task including NFR-009/NFR-010; conformance revision 3 (82 tests) |
 | Initial source | [`../solutions/qwen38-max-venice-run-01/`](../solutions/qwen38-max-venice-run-01/) |
 | Initial tree fingerprint | `df1985468ee3ecc7d7599d37562a5015c6acf2c45bc61b357f153497f4e63647` |
-| State | Initial round evaluated; repair 01 requested; final score deferred |
+| Repair 01 source | [`../solutions/qwen38-max-venice-run-01-repair-01/`](../solutions/qwen38-max-venice-run-01-repair-01/) |
+| Repair 01 tree fingerprint | `2c90daca2dd11f09015a8bc341cc3530f19a44ec8465d82c03084482208f5ab9` |
+| State | Repair 01 evaluated; final repair requested; final score deferred |
 
 The completed external workspace had an observed clean Git repository with **13** logical
 conventional commits, from scaffold through implementation, tests, formatting, review fixes, and
@@ -123,10 +125,30 @@ cmake -S solutions/qwen38-max-venice-run-01 -B /tmp/qwen38max-no-gtest \
 # Result: configure fails at tests/CMakeLists.txt: find_package(GTest REQUIRED).
 ```
 
-## Repair request
+## Repair 01 result
 
-The focused repair is recorded in
-[`repair-prompts/qwen38-max-venice-run-01-repair-01.md`](repair-prompts/qwen38-max-venice-run-01-repair-01.md).
-It is intentionally limited to finite vector/storage correctness, close-following progress,
-library-only configuration/identifier exhaustion, and matching documentation/tests. Final scoring
-is deferred until that repair is evaluated.
+**Build/API gate: PASS.** The three supplied public headers remain byte-identical to the
+contract. GCC Debug with `-Wall -Wextra -Wpedantic -Werror` passed all **107** candidate tests;
+Clang ASan/UBSan/float-cast-overflow passed the same 107 with no report. The repaired source also
+configured and built as a library with `BUILD_TESTING=OFF` and GTest disabled, and a full-tree
+`clang-format --dry-run --Werror` check passed.
+
+**Conformance: 81/82.** Geometry **15/15**, navmesh/path **30/30**, simulation **33/33**, and
+crowd **3/4** pass. The stored-float speed-budget regression, finite-vector behavior, and
+library-only CMake defect are fixed. Identifier allocation now stops at exhaustion rather than
+wrapping, with a focused internal allocator test.
+
+The one remaining failure is
+`Crowd_ReflexCornerFollowing.CloseAgentsBothRoundCornerAndReach`: the leader reaches, but the
+follower is still `Moving` after 600 substeps. The repair's zero-margin treatment of a reached
+neighbor correctly fixes its new tight *straight*-corridor test, but it does not address the
+separate reflex-corner local minimum. The scorer prefers a feasible zero velocity over every
+safe immediate retreat/tangent candidate with negative route alignment, so stateless replanning
+can preserve a permanent stall. Its new candidate test therefore did not exercise the requested
+L-passage case.
+
+The final focused repair is recorded in
+[`repair-prompts/qwen38-max-venice-run-01-repair-02.md`](repair-prompts/qwen38-max-venice-run-01-repair-02.md).
+It is limited to deterministic general blocked-agent recovery, the exact missing L-passage
+regression, and accurate documentation. Final scoring remains deferred until that repair is
+evaluated.

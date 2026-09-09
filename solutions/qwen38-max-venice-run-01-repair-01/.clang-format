@@ -1,0 +1,23 @@
+# vwmini house style: LLVM base with 4-space indent, 100-column limit, and
+# Allman braces for functions only (control statements, classes, structs and
+# namespaces keep the brace attached). Derived by diffing the committed
+# sources; see docs/architecture/implementation-plan.md (WP4 revision).
+#
+# include/vwmini/ carries its own .clang-format with DisableFormat: the public
+# headers are the frozen supplied contract and must stay byte-identical.
+Language: Cpp
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+PointerAlignment: Left
+SortUsingDeclarations: false
+AllowShortFunctionsOnASingleLine: None
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  AfterClass: false
+  AfterStruct: false
+  AfterNamespace: false
+  AfterEnum: false
+  AfterControlStatement: Never
+  AfterCaseLabel: false
