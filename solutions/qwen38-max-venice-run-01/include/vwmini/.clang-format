@@ -1,0 +1,4 @@
+# The public headers are the frozen supplied API contract (S5.2 gate: they
+# must remain byte-identical to the delivered versions). Never reformat them.
+Language: Cpp
+DisableFormat: true

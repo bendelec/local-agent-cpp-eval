@@ -1,0 +1,21 @@
+find_package(GTest REQUIRED)
+include(GoogleTest)
+
+# vwmini_test(<name>) creates tests/<name>_test.cpp -> executable <name>_test.
+function(vwmini_test name)
+    add_executable(${name}_test ${name}_test.cpp)
+    target_link_libraries(${name}_test PRIVATE vwmini::vwmini GTest::gtest GTest::gtest_main)
+    if(VWMINI_WARNINGS AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(${name}_test PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+    gtest_discover_tests(${name}_test)
+endfunction()
+
+vwmini_test(smoke)
+vwmini_test(geometry)
+vwmini_test(triangulation)
+vwmini_test(nav_mesh)
+vwmini_test(pathfinding)
+vwmini_test(simulation)
+vwmini_test(simulation_avoidance)
+vwmini_test(integration)
